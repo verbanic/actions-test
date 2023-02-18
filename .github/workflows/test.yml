@@ -1,0 +1,54 @@
+name: 'Test'
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  init:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c' # ratchet:actions/checkout@v3
+      - name: 'Echo'
+        run: echo "this is a test"
+
+  test:
+    needs: ['init']
+    if: ${{ needs.init.result == 'success' }}
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c' # ratchet:actions/checkout@v3
+      - name: 'Exit'
+        run: exit 1
+
+  cleanup:
+    needs: ['init', 'test']
+    if: ${{ always() }}
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c' # ratchet:actions/checkout@v3
+      - name: 'Test'
+        run: exit 1
+      - name: 'Test'
+        run: exit 1
+      - name: 'Exit'
+        if: ${{ always() }}
+        run: exit 0
+
+  success:
+    needs: ['init', 'test', 'cleanup']
+    if: ${{ always() }}
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Failed'
+        if: ${{ needs.init.result != 'success' || needs.test.result != 'success' || needs.cleanup.result != 'success' }}
+        run: exit 1
+      - name: 'Success'
+        run: exit 0
