@@ -25,14 +25,21 @@ permissions:
   pull-requests: 'read'
 
 jobs:
-  presubmit:
+  validate:
     runs-on: 'ubuntu-latest'
     steps:
       - id: 'validate-reviewers'
-        if: '${{ github.event.pull_request }}'
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
           script: |-
+            // validate the event name, exit gracefully
+            if (!["pull_request", "pull_request_review"].includes(eventName)) {
+              console.log(
+                "This workflow was setup for the wrong event trigger. want-lgtm-all should only be run for pull_request and pull_request_review events."
+              );
+              return;
+            }
+
             const body = context.payload.pull_request.body || "";
 
             // if pr body does not contain want_lgtm_all, exit gracefully
@@ -41,33 +48,33 @@ jobs:
               return;
             }
 
-            let activeReviewers = await github.rest.pulls.listRequestedReviewers({
+            const { data: reviews } = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number,
             });
 
-            const usersStillNeedingApproval = activeReviewers.data.users.map(
-              (u) => u.login
-            );
-
-            if (usersStillNeedingApproval.length === 0){
-              core.setFailed("At least one reviewer is required when specifying want_lgtm_all. Please add a reviewer or remove want_lgtm_all from the PR body.")
+            if (reviews.length === 0) {
+              core.setFailed(
+                "At least one reviewer is required when specifying want_lgtm_all. Please add a reviewer or remove want_lgtm_all from the PR body."
+              );
               return;
             }
 
             console.log(
-              "Users still needing approval: " + JSON.stringify(usersStillNeedingApproval)
+              "Completed reviews: " + JSON.stringify(reviews.map((r) => r.user?.login))
             );
 
-            const reviews = await github.rest.pulls.listReviews({
+            let { data: activeReviewers } = await github.rest.pulls.listRequestedReviewers({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number,
             });
 
+            const usersStillNeedingApproval = activeReviewers.users.map((u) => u.login);
+
             console.log(
-              "Completed reviews: " + JSON.stringify(reviews.data.map((r) => r.user?.login))
+              "Users still needing approval: " + JSON.stringify(usersStillNeedingApproval)
             );
 
             if (usersStillNeedingApproval.length > 0) {
@@ -78,29 +85,37 @@ jobs:
             }
 
             // get the filename for this workflow
-            var workflowFilename = process.env.GITHUB_WORKFLOW_REF.split("@")[0].split("/").pop();
+            var workflowFilename = process.env.GITHUB_WORKFLOW_REF.split("@")[0]
+              .split("/")
+              .pop();
 
-            // when a pull_request_review is submitted, and all required reviewers have approved
+            // when a pull_request_review is submitted and all required reviewers have approved
             // we need to re-trigger any previously failed pull_request event for our workflow
+            // this is because pull_request and pull_request_review are seen as two different
+            // status checks by github
             if (context.eventName == "pull_request_review") {
-              // Get workflows
+              // get all workflow runs for our file and this pull request head sha
               let workflows = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: workflowFilename,
-                branch: context.payload.pull_request.head.ref,
+                head_sha: context.payload.pull_request.head.sha,
                 event: "pull_request",
               });
 
+              // get all unsuccessful previous runs for our workflows
               let unsuccessfulRuns = workflows.data.workflow_runs
                 .filter((w) => w.conclusion != "success")
-                .filter((w) => w.pull_requests?.map((p) => p.number).includes(context.issue.number))
+                .filter((w) =>
+                  w.pull_requests?.map((p) => p.number).includes(context.issue.number)
+                )
                 .sort((x) => x.run_number);
-              
+
               console.log(unsuccessfulRuns);
 
+              // retrigger the latest run for our unsuccessful workflow run
               if (unsuccessfulRuns.length > 0) {
-                let t = await github.rest.actions.reRunWorkflow({
+                await github.rest.actions.reRunWorkflow({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   run_id: unsuccessfulRuns[0].id,
