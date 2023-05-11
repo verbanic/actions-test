@@ -72,7 +72,7 @@ jobs:
             }
 
             // get the filename for this workflow
-            var workflowFilename = process.env.WORKFLOW_REF.split("@")[0].split("/").pop();
+            var workflowFilename = process.env.GITHUB_WORKFLOW_REF.split("@")[0].split("/").pop();
 
             // when a pull_request_review is submitted, and all required reviewers have approved
             // we need to re-trigger any previously failed pull_request event for our workflow
