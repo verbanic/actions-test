@@ -27,13 +27,15 @@ jobs:
   presubmit:
     runs-on: 'ubuntu-latest'
     steps:
-      - name: 'Validate Required Reviewers'
+      - id: 'validate-reviewers'
         if: '${{ github.event.pull_request }}'
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
           script: |-
             const body = context.payload.pull_request.body || "";
-            if (!body.match(/want_lgtm_all[\s]?=[\s]?true/gim)) {
+
+            // if pr body does not contain want_lgtm_all, exit gracefully
+            if (!body.match(/want_lgtm_all/gim)) {
               console.log("PR body does not contain want_lgtm_all");
               return;
             }
@@ -69,29 +71,33 @@ jobs:
               return;
             }
 
-            // If all are LGTM, rerun any failed LGTM workflow triggered by original request
+            // get the filename for this workflow
+            var workflowFilename = process.env.WORKFLOW_REF.split("@")[0].split("/").pop();
+
+            // when a pull_request_review is submitted, and all required reviewers have approved
+            // we need to re-trigger any previously failed pull_request event for our workflow
             if (context.eventName == "pull_request_review") {
               // Get workflows
-              let workflows = await octo.rest.actions.listWorkflowRuns({
-                owner: repository.owner,
-                repo: repository.repo,
-                workflow_id: "want_lgtm_all.yml",
-                branch: pr.data.head.ref,
+              let workflows = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflowFilename,
+                branch: context.payload.pull_request.head.ref,
                 event: "pull_request",
               });
 
-              console.log(workflows);
-
-              let failedRuns = workflows.data.workflow_runs
-                .filter((w) => w.conclusion == "failure")
-                .filter((w) => w.pull_requests?.map((p) => p.number).includes(pullRequest))
+              let unsuccessfulRuns = workflows.data.workflow_runs
+                .filter((w) => w.conclusion != "success")
+                .filter((w) => w.pull_requests?.map((p) => p.number).includes(context.issue.number))
                 .sort((x) => x.run_number);
+              
+              console.log(unsuccessfulRuns);
 
-              if (failedRuns.length > 0) {
-                let t = await octo.rest.actions.reRunWorkflow({
-                  owner: repository.owner,
-                  repo: repository.repo,
-                  run_id: failedRuns[0].id,
+              if (unsuccessfulRuns.length > 0) {
+                let t = await github.rest.actions.reRunWorkflow({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: unsuccessfulRuns[0].id,
                 });
               }
             }
