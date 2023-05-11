@@ -61,9 +61,9 @@ jobs:
               return;
             }
 
-            const unapprovedReviews = reviews.filter(
-              (r) => r.state.toUpperCase() !== "APPROVED"
-            );
+            const unapprovedReviews = reviews
+              .filter((r) => r.state.toUpperCase() !== "APPROVED")
+              .map((r) => r.user.login);
 
             core.info("Unapproved review(s): " + JSON.stringify(unapprovedReviews));
 
