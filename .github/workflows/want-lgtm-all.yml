@@ -31,7 +31,7 @@ jobs:
         with:
           retries: 3
           script: |-
-            // validate the event name and exit with error
+            // validate required event names
             if (!["pull_request", "pull_request_review"].includes(context.eventName)) {
               core.setFailed(
                 "want-lgtm-all only supports the pull_request and pull_request_review event triggers. Please modify your workflow and try again."
@@ -53,6 +53,7 @@ jobs:
               pull_number: context.issue.number,
             });
 
+            // sanity check, require at least one reviewer
             if (reviews.length === 0) {
               core.setFailed(
                 "At least one reviewer is required when specifying want_lgtm_all. Please add a reviewer or remove want_lgtm_all from the PR body."
@@ -60,9 +61,16 @@ jobs:
               return;
             }
 
-            core.info(
-              "Completed reviews: " + JSON.stringify(reviews.map((r) => r.user?.login))
+            const unapprovedReviews = review.filter(
+              (r) => r.state.toUpperCase() !== "APPROVED"
             );
+
+            core.info("Unapproved review(s): " + JSON.stringify(unapprovedReviews));
+
+            if (unapprovedReviews.length > 0) {
+              core.setFailed("Unapproved review(s): " + unapprovedReviews.join(", "));
+              return;
+            }
 
             let { data: activeReviewers } = await github.rest.pulls.listRequestedReviewers({
               owner: context.repo.owner,
@@ -70,16 +78,12 @@ jobs:
               pull_number: context.issue.number,
             });
 
-            const usersStillNeedingApproval = activeReviewers.users.map((u) => u.login);
+            const pendingApprovals = activeReviewers.users.map((u) => u.login);
 
-            core.info(
-              "Users still needing approval: " + JSON.stringify(usersStillNeedingApproval)
-            );
+            core.info("Pending approval(s): " + JSON.stringify(pendingApprovals));
 
-            if (usersStillNeedingApproval.length > 0) {
-              core.setFailed(
-                "Waiting on Approval from " + usersStillNeedingApproval.join(", ")
-              );
+            if (pendingApprovals.length > 0) {
+              core.setFailed("Pending approval(s): " + pendingApprovals.join(", "));
               return;
             }
 
