@@ -61,7 +61,7 @@ jobs:
               return;
             }
 
-            const unapprovedReviews = review.filter(
+            const unapprovedReviews = reviews.filter(
               (r) => r.state.toUpperCase() !== "APPROVED"
             );
 
