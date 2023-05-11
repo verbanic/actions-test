@@ -53,8 +53,6 @@ jobs:
               pull_number: context.issue.number,
             });
 
-            console.log(reviews);
-
             // sanity check, require at least one reviewer
             if (reviews.length === 0) {
               core.setFailed(
@@ -63,9 +61,16 @@ jobs:
               return;
             }
 
-            const unapprovedReviews = reviews
-              .filter((r) => r.state.toUpperCase() !== "APPROVED")
-              .map((r) => r.user.login);
+            const reviewStateByLogin = {};
+            reviews
+              .sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at))
+              .forEach((r) => {
+                reviewsStatusByLogin[r.user.login] = r.state;
+              });
+
+            const unapprovedReviews = Object.entries(reviewStateByLogin)
+              .filter(([key, value]) => value.toUpperCase() !== "APPROVED")
+              .map(([key, value]) => key);
 
             core.info("Unapproved review(s): " + JSON.stringify(unapprovedReviews));
 
