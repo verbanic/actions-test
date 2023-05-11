@@ -61,13 +61,16 @@ jobs:
               return;
             }
 
+            // multiple users can submit multiple reviews with different statuses
+            // aggregate the status per login in chronological order to get latest status
             const reviewStateByLogin = {};
             reviews
               .sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at))
               .forEach((r) => {
-                reviewsStatusByLogin[r.user.login] = r.state;
+                reviewStateByLogin[r.user.login] = r.state;
               });
 
+            // get all reviews without an approved status
             const unapprovedReviews = Object.entries(reviewStateByLogin)
               .filter(([key, value]) => value.toUpperCase() !== "APPROVED")
               .map(([key, value]) => key);
