@@ -53,6 +53,8 @@ jobs:
               pull_number: context.issue.number,
             });
 
+            console.log(reviews);
+
             // sanity check, require at least one reviewer
             if (reviews.length === 0) {
               core.setFailed(
