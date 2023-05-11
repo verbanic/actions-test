@@ -47,14 +47,14 @@ jobs:
               pull_number: context.issue.number,
             });
 
-            if (activeReviewers.length === 0){
-              core.setFailed("At least one reviewer is required when specifying want_lgtm_all. Please add a reviewer or remove want_lgtm_all from the PR body.")
-              return;
-            }
-
             const usersStillNeedingApproval = activeReviewers.data.users.map(
               (u) => u.login
             );
+
+            if (usersStillNeedingApproval.length === 0){
+              core.setFailed("At least one reviewer is required when specifying want_lgtm_all. Please add a reviewer or remove want_lgtm_all from the PR body.")
+              return;
+            }
 
             console.log(
               "Users still needing approval: " + JSON.stringify(usersStillNeedingApproval)
