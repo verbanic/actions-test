@@ -1,0 +1,57 @@
+name: 'want-lgtm-all'
+
+on:
+  pull_request:
+  pull_request_review:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  pull-requests: 'read'
+
+jobs:
+  presubmit:
+    name: 'Want LGTM All'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Validate Required Reviewers'
+        if: '${{ github.event.pull_request }}'
+        uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
+        with:
+          script: |-
+            const body = context.payload.pull_request.body;
+            if(!body.match(/want_lgtm_all[\s]?=[\s]?true/gmi)){
+              console.log("PR body does not contain want_lgtm_all");
+              return;
+            }
+
+            process.exit(1);
+
+            let activeReviewers = await github.rest.pulls.listRequestedReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const usersStillNeedingApproval = activeReviewers.data.users.map((u) => u.login);
+
+            console.log(
+              "Users still needing approval: " + JSON.stringify(usersStillNeedingApproval)
+            );
+
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            console.log(
+              "Completed reviews: " + JSON.stringify(reviews.data.map((r) => r.user?.login))
+            );
+
+            if (usersStillNeedingApproval.length > 0) {
+              core.setFailed(
+                "Waiting on Approval from " + usersStillNeedingApproval.join(", ")
+              );
+              return;
+            }
