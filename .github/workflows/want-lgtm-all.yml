@@ -21,6 +21,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  checks: 'write'
   pull-requests: 'read'
 
 jobs:
