@@ -10,7 +10,7 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-      - review_request
+      - review_requested
       - review_request_removed
   pull_request_review:
     types:
