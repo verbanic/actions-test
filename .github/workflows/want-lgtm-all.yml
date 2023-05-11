@@ -44,8 +44,6 @@ jobs:
               return;
             }
 
-            process.exit(1);
-
             let activeReviewers = await github.rest.pulls.listRequestedReviewers({
               owner: context.repo.owner,
               repo: context.repo.repo,
