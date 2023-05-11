@@ -33,7 +33,7 @@ jobs:
         with:
           script: |-
             const body = context.payload.pull_request.body || "";
-            if(!body.match(/want_lgtm_all[\s]?=[\s]?true/gmi)){
+            if (!body.match(/want_lgtm_all[\s]?=[\s]?true/gim)) {
               console.log("PR body does not contain want_lgtm_all");
               return;
             }
@@ -44,7 +44,9 @@ jobs:
               pull_number: context.issue.number,
             });
 
-            const usersStillNeedingApproval = activeReviewers.data.users.map((u) => u.login);
+            const usersStillNeedingApproval = activeReviewers.data.users.map(
+              (u) => u.login
+            );
 
             console.log(
               "Users still needing approval: " + JSON.stringify(usersStillNeedingApproval)
@@ -65,4 +67,31 @@ jobs:
                 "Waiting on Approval from " + usersStillNeedingApproval.join(", ")
               );
               return;
+            }
+
+            // If all are LGTM, rerun any failed LGTM workflow triggered by original request
+            if (context.eventName == "pull_request_review") {
+              // Get workflows
+              let workflows = await octo.rest.actions.listWorkflowRuns({
+                owner: repository.owner,
+                repo: repository.repo,
+                workflow_id: "want_lgtm_all.yml",
+                branch: pr.data.head.ref,
+                event: "pull_request",
+              });
+
+              console.log(workflows);
+
+              let failedRuns = workflows.data.workflow_runs
+                .filter((w) => w.conclusion == "failure")
+                .filter((w) => w.pull_requests?.map((p) => p.number).includes(pullRequest))
+                .sort((x) => x.run_number);
+
+              if (failedRuns.length > 0) {
+                let t = await octo.rest.actions.reRunWorkflow({
+                  owner: repository.owner,
+                  repo: repository.repo,
+                  run_id: failedRuns[0].id,
+                });
+              }
             }
