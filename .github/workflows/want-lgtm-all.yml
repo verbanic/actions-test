@@ -3,8 +3,6 @@ name: 'want-lgtm-all'
 on:
   pull_request:
     types:
-      - assigned
-      - unassigned
       - opened
       - edited
       - reopened
@@ -21,7 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  checks: 'write'
+  actions: 'write'
   pull-requests: 'read'
 
 jobs:
@@ -31,20 +29,21 @@ jobs:
       - id: 'validate-reviewers'
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
+          retries: 3
           script: |-
-            // validate the event name, exit gracefully
-            if (!["pull_request", "pull_request_review"].includes(context.eventName)) {
-              console.log(
-                "This workflow was setup for the wrong event trigger. want-lgtm-all should only be run for pull_request and pull_request_review events."
+            // validate the event name and exit with error
+            if (!["pull_request", "pull_request_review"].includes(eventName)) {
+              core.setFailed(
+                "want-lgtm-all only supports the pull_request and pull_request_review event triggers. Please modify your workflow and try again."
               );
               return;
             }
 
             const body = context.payload.pull_request.body || "";
 
-            // if pr body does not contain want_lgtm_all, exit gracefully
+            // if PR body does not contain want_lgtm_all, exit gracefully
             if (!body.match(/want_lgtm_all/gim)) {
-              console.log("PR body does not contain want_lgtm_all");
+              core.info("PR body does not contain want_lgtm_all");
               return;
             }
 
@@ -61,7 +60,7 @@ jobs:
               return;
             }
 
-            console.log(
+            core.info(
               "Completed reviews: " + JSON.stringify(reviews.map((r) => r.user?.login))
             );
 
@@ -73,7 +72,7 @@ jobs:
 
             const usersStillNeedingApproval = activeReviewers.users.map((u) => u.login);
 
-            console.log(
+            core.info(
               "Users still needing approval: " + JSON.stringify(usersStillNeedingApproval)
             );
 
