@@ -33,7 +33,7 @@ jobs:
         with:
           script: |-
             // validate the event name, exit gracefully
-            if (!["pull_request", "pull_request_review"].includes(eventName)) {
+            if (!["pull_request", "pull_request_review"].includes(context.eventName)) {
               console.log(
                 "This workflow was setup for the wrong event trigger. want-lgtm-all should only be run for pull_request and pull_request_review events."
               );
