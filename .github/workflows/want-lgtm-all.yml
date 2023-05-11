@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   presubmit:
-    name: 'Want LGTM All'
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Validate Required Reviewers'
@@ -19,8 +18,7 @@ jobs:
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
           script: |-
-            console.log(context.payload)
-            const body = context.payload.pull_request.body;
+            const body = context.payload.pull_request.body || "";
             if(!body.match(/want_lgtm_all[\s]?=[\s]?true/gmi)){
               console.log("PR body does not contain want_lgtm_all");
               return;
