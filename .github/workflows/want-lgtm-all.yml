@@ -144,8 +144,8 @@ jobs:
               workflow_id: workflowFilename,
               branch: process.env.GITHUB_REF_NAME,
               event: "pull_request",
-              status: "failure"
-              per_page: 100
+              status: "failure",
+              per_page: 100,
             });
 
             // get all unsuccessful previous runs for our workflows
