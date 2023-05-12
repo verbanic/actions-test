@@ -138,18 +138,18 @@ jobs:
               .pop();
 
             // get the latest failed workflow runs for our file and this branch
-            let workflows = await github.rest.actions.listWorkflowRuns({
+            let { data: workflows } = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: workflowFilename,
-              branch: process.env.GITHUB_REF_NAME,
+              branch: context.payload.pull_request.head.ref,
               event: "pull_request",
               status: "failure",
               per_page: 100,
             });
 
             // get all unsuccessful previous runs for our workflows
-            let unsuccessfulRuns = workflows.data.workflow_runs
+            let unsuccessfulRuns = workflows.workflow_runs
               .filter((w) =>
                 w.pull_requests.map((p) => p.number).includes(context.issue.number)
               )
