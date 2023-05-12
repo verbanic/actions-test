@@ -27,6 +27,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     steps:
       - id: 'validate-event'
+        name: 'Validate GitHub Event'
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
           script: |-
@@ -39,6 +40,7 @@ jobs:
             }
 
       - id: 'want-lgtm'
+        name: 'Validate PR Body'
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
           result-encoding: 'string'
@@ -54,11 +56,13 @@ jobs:
             return "true";
 
       - id: 'validate-reviews'
+        name: 'Validate Reviews'
         if: ${{ steps.want-lgtm.outputs.result ==  'true' }}
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
           retries: 3
           script: |-
+            // get all submitted reviews
             const { data: submittedReviews } = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -114,6 +118,7 @@ jobs:
             }
 
       - id: 'rerun-status-checks'
+        name: 'Re-run Status Checks'
         if: ${{ steps.want-lgtm.outputs.result ==  'true' && github.event_name == 'pull_request_reviews' }}
         uses: 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' # ratchet:actions/github-script@v6
         with:
