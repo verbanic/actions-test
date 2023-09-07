@@ -1,5 +1,5 @@
 name: 'dispatch_test'
-run-name: 'dispatch_test - [${{ github.event.action }}]'
+run-name: 'dispatch_test - [${{ github.event.action }}][${{ github.event.client_payload.uuid }}]'
 
 on:
   repository_dispatch:
