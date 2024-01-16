@@ -18,6 +18,11 @@ jobs:
           echo "paths=test" >> $GITHUB_OUTPUT
 
   test:
+    strategy:
+      matrix:
+        version: 
+          - '10'
+          - '12'
     needs:
       - 'init'
     if: ${{ needs.init.result == 'success' }}
@@ -27,6 +32,8 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: 'actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c' # ratchet:actions/checkout@v3
+      - name: 'Echo'
+        run: echo "${{ github.job_id }}""
       - name: 'Success'
         run: exit 0
       - name: 'Failure'
