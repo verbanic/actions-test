@@ -20,9 +20,12 @@ jobs:
   test:
     strategy:
       matrix:
+        test:
+          - 'a'
+          - 'b'
         version: 
-          - '10'
-          - '12'
+          - '1'
+          - '2'
     needs:
       - 'init'
     if: ${{ needs.init.result == 'success' }}
