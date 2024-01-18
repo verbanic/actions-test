@@ -137,6 +137,7 @@ runs:
             const parentSHA = "${{ steps.create-branch-ref.outputs.result }}";
             const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
 
+            // documented here: https://docs.github.com/en/rest/git/trees?apiVersion=2022-11-28#create-a-tree
             const FILE_MODE = "100644";
             const EXEC_MODE = "100755";
 
@@ -239,7 +240,7 @@ runs:
         script: |-
           try {
             const headRef = process.env.HEAD_BRANCH;
-            const baseRef = "${{ github.ref_name }}";
+            const baseRef = process.env.BASE_BRANCH;;
 
             const listResponse = await github.rest.pulls.list({
               owner: context.repo.owner,
