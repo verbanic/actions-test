@@ -276,6 +276,7 @@ runs:
               repo: context.repo.repo,
               ref: pullRequestPartialRef,
               sha: commit.sha,
+              force: true
             });
           } catch (err) {
             core.error(err);
