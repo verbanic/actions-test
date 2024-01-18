@@ -156,7 +156,6 @@ runs:
               changedPaths.map(async (file) => {
                 const content = await fs.readFile(file, { encoding: "utf8" });
                 const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
-
                 prCommitTree.push({
                   path: file,
                   mode: isExec ? EXEC_MODE : FILE_MODE,
