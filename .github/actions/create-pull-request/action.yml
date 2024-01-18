@@ -50,9 +50,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # Create a pull request branch using the GitHub API
-    - name: 'Create/Update Pull Request Branch'
-      id: 'create-branch-ref'
+    # Get base ref
+    - name: 'Get Base Ref SHA'
+      id: 'base-branch-ref'
       uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
       env:
         HEAD_BRANCH: '${{ inputs.head_branch }}'
@@ -64,7 +64,42 @@ runs:
         result-encoding: 'string'
         retries: '${{ inputs.max_retries }}'
         script: |-
-          const githubSHA = "${{ github.sha }}";
+          const pullRequestPartialRef = `heads/${process.env.BASE_BRANCH}`;
+
+          try {
+            core.info(`Get base branch reference:
+              owner: ${context.repo.owner}
+              repo:  ${context.repo.repo}
+              ref:   ${pullRequestPartialRef}
+            `);
+
+            const { data: existingRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequestPartialRef,
+            });
+
+            return existingRef.object.sha;
+          } catch (err) {
+            core.error(err);
+            core.setFailed(`Failed to get base branch reference: ${err}`);
+            process.exit(1);
+          }
+
+    # Create a pull request branch using the GitHub API
+    - name: 'Create/Update Pull Request Branch'
+      id: 'head-branch-ref'
+      uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
+      env:
+        HEAD_BRANCH: '${{ inputs.head_branch }}'
+        BASE_BRANCH: '${{ inputs.base_branch }}'
+        PR_TITLE: '${{ inputs.pull_request_title }}'
+        PR_BODY: '${{ inputs.pull_request_body }}'
+      with:
+        github-token: '${{ inputs.token }}'
+        result-encoding: 'string'
+        retries: '${{ inputs.max_retries }}'
+        script: |-
           const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
           const pullRequestFullRef = `refs/${pullRequestPartialRef}`;
 
@@ -119,14 +154,14 @@ runs:
               owner: ${context.repo.owner}
               repo:  ${context.repo.repo}
               ref:   ${pullRequestFullRef}
-              sha:   ${githubSHA}
+              sha:   ${context.sha}
             `);
 
             const { data: newRef } = await github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pullRequestFullRef,
-              sha: githubSHA,
+              sha: context.sha,
             });
 
             return newRef.object.sha;
@@ -155,19 +190,12 @@ runs:
           try {
             const fs = require("fs/promises");
 
-            const githubSHA = "${{ github.sha }}";
-            const parentSHA = "${{ steps.create-branch-ref.outputs.result }}";
+            const parentSHA = "${{ steps.base-branch-ref.outputs.result }}";
             const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
 
             // documented here: https://docs.github.com/en/rest/git/trees?apiVersion=2022-11-28#create-a-tree
             const FILE_MODE = "100644";
             const EXEC_MODE = "100755";
-
-            core.info(`Creating new tree:
-              owner:     ${context.repo.owner}
-              repo:      ${context.repo.repo}
-              base_tree: ${githubSHA}
-            `);
 
             const prCommitTree = [];
 
@@ -201,11 +229,17 @@ runs:
               })
             );
 
+            core.info(`Creating new tree:
+              owner:     ${context.repo.owner}
+              repo:      ${context.repo.repo}
+              base_tree: ${context.sha}
+            `);
+
             // create new git tree from the pr branch
             const { data: tree } = await github.rest.git.createTree({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              base_tree: githubSHA,
+              base_tree: context.sha,
               tree: prCommitTree,
             });
 
@@ -222,7 +256,7 @@ runs:
             const { data: commit } = await github.rest.git.createCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              message: "",
+              message: process.env.PR_TITLE,
               parents: [parentSHA],
               tree: tree.sha,
             });
