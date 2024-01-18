@@ -34,8 +34,12 @@ inputs:
     description: 'The pull request body. Defaults to ``.'
     required: false
     default: ''
-  changed_files_tree:
-    description: 'JSON array of the files changed objects to add to the pull request commit. Defaults to `[]`.'
+  changed_paths:
+    description: 'JSON array of the relative file paths added or changed in the pull request. Defaults to `[]`.'
+    required: false
+    default: '[]'
+  deleted_paths:
+    description: 'JSON array of the relative file paths deleted in the pull request. Defaults to `[]`.'
     required: false
     default: '[]'
   max_retries:
@@ -120,7 +124,8 @@ runs:
         BASE_BRANCH: '${{ inputs.base_branch }}'
         PR_TITLE: '${{ inputs.pull_request_title }}'
         PR_BODY: '${{ inputs.pull_request_body }}'
-        CHANGED_FILES_TREE: '${{ inputs.changed_files_tree }}'
+        CHANGED_PATHS: '${{ inputs.changed_paths }}'
+        DELETED_PATHS: '${{ inputs.deleted_paths }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '3'
@@ -132,33 +137,54 @@ runs:
             const parentSHA = "${{ steps.create-branch-ref.outputs.result }}";
             const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
 
+            const FILE_MODE = "100644";
+            const EXEC_MODE = "100755";
+
             core.info(`Creating new tree:
               owner:     ${context.repo.owner}
               repo:      ${context.repo.repo}
               base_tree: ${githubSHA}
             `);
 
-            console.log(`RAW: ${process.env.CHANGED_FILES_TREE}`)
-            const changedFilesTree = JSON.parse(process.env.CHANGED_FILES_TREE);
-            console.log(`BEFORE: ${changedFilesTree}`);
+            const prCommitTree = [];
+
+            const changedPaths = JSON.parse(process.env.CHANGED_PATHS);
+            const deletedPaths = JSON.parse(process.env.DELETED_PATHS);
 
             // iterate the files loading their content into each object
             await Promise.allSettled(
-              changedFilesTree.map(async (file) => {
-                console.log(`FILE: ${file}`);
-                const content = await fs.readFile(file.path, { encoding: "utf8" });
-                file.content = content;
+              changedPaths.map(async (file) => {
+                const content = await fs.readFile(file, { encoding: "utf8" });
+                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
+
+                prCommitTree.push({
+                  path: file,
+                  mode: isExec ? EXEC_MODE : FILE_MODE,
+                  type: "blob",
+                  content: content,
+                });
               })
             );
 
-            console.log(`AFTER: ${changedFilesTree}`);
+            // iterate the files loading their content into each object
+            await Promise.allSettled(
+              deletedPaths.map(async (file) => {
+                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
+                prCommitTree.push({
+                  path: file,
+                  mode: isExec ? EXEC_MODE : FILE_MODE,
+                  type: "blob",
+                  sha: null,
+                });
+              })
+            );
 
             // create new git tree from the pr branch
             const { data: tree } = await github.rest.git.createTree({
               owner: context.repo.owner,
               repo: context.repo.repo,
               base_tree: githubSHA,
-              tree: changedFilesTree,
+              tree: prCommitTree,
             });
 
             core.debug("tree: ", tree);

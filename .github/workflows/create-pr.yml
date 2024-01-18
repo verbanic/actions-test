@@ -47,20 +47,23 @@ jobs:
           token: '${{ secrets.TEST_TOKEN }}'
           base_branch: 'main'
           head_branch: 'automation/test-pr'
-          pull_request_title: 'test: create a sample PR'
+          pull_request_title: 'test: testing the create PR flow'
           pull_request_body: |-
             Sample creating a multi-line PR body.
 
-            This PR adds two files:
+            Added:
+
+              ```code
               example/exec/test-exec.sh
               example/dir/test-file.txt
+              ```
 
-          changed_files_tree: |-
-            [
-              {
-                "path": "example/exec/test.sh"
-              },
-              {
-                "path": "example/dir/test.txt"
-              }
-            ]
+            Deleted:
+
+              ```code
+              test-file.txt
+              ```
+          changed_paths: |-
+            ["example/dir/test.txt","example/exec/test.sh"]
+          deleted_paths: |-
+            ["test-file.txt"]
