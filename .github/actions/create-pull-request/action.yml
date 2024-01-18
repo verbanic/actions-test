@@ -69,6 +69,29 @@ runs:
           const pullRequestFullRef = `refs/${pullRequestPartialRef}`;
 
           try {
+            core.info(`Get refer request reference:
+              owner: ${context.repo.owner}
+              repo:  ${context.repo.repo}
+              ref:   ${pullRequestPartialRef}
+            `);
+
+            const { data: existingRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequestPartialRef,
+            });
+
+            return existingRef.object.sha;
+          } catch (err) {
+            if (err.status !== 404) {
+              core.setFailed(`Failed to get existing pull request reference: ${err}`);
+              core.error(err);
+              process.exit(1);
+            }
+            core.info("Existing pull request reference not found");
+          }
+
+          try {
             core.info(`Checking for existing pull request reference:
               owner: ${context.repo.owner}
               repo:  ${context.repo.repo}
@@ -114,8 +137,7 @@ runs:
             core.error(err);
           }
 
-    # Create a pull request for review
-    # Use the GitHub API to ensure commits are signed
+    # Commit files using the GitHub API to ensure commits are signed
     - name: 'Create Commits'
       id: 'create-commits'
       uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
@@ -128,7 +150,7 @@ runs:
         DELETED_PATHS: '${{ inputs.deleted_paths }}'
       with:
         github-token: '${{ inputs.token }}'
-        retries: '3'
+        retries: '${{ inputs.max_retries }}'
         script: |-
           try {
             const fs = require("fs/promises");
@@ -226,6 +248,7 @@ runs:
             core.setFailed(`Failed to create commits for pull request branch: ${err}`);
           }
 
+    # Create a pull request for review
     - name: 'Create/Update Pull Request'
       id: 'create-update-pull-request'
       uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
@@ -236,7 +259,7 @@ runs:
         PR_BODY: '${{ inputs.pull_request_body }}'
       with:
         github-token: '${{ inputs.token }}'
-        retries: '3'
+        retries: '${{ inputs.max_retries }}'
         script: |-
           try {
             const headRef = process.env.HEAD_BRANCH;
