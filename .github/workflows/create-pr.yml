@@ -14,9 +14,7 @@
 
 name: 'test-create-pr'
 on:
-  pull_request:
-    branches:
-      - 'main'
+  workflow_dispatch:
 
 jobs:
   create_pr:
