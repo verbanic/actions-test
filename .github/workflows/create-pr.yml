@@ -1,0 +1,72 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: 'test-create-pr'
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  create_pr:
+    permissions:
+      contents: 'write'
+      packages: 'write'
+      pull-requests: 'write'
+      id-token: 'write'
+
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Checkout'
+        id: 'checkout'
+        uses: 'actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8' # ratchet:actions/checkout@v3
+
+      - name: 'Add Files'
+        shell: 'bash'
+        run: |-
+          mkdir -p "${{ github.workspace }}/example/exec"
+          mkdir -p "${{ github.workspace }}/example/dir"
+
+          echo "# this is a script" > "${{ github.workspace }}/example/exec/test.sh"
+          echo "This is a text file" > "${{ github.workspace }}/example/dir/test.txt"
+
+          chmod 755 "${{ github.workspace }}/example/exec/test.sh"
+
+      - name: 'Create/Update Pull Request'
+        uses: './.github/actions/create-pull-request'
+        with:
+          token: '${{ secrets.TEST_TOKEN }}'
+          base_branch: 'main'
+          head_branch: 'automation/test-pr'
+          pull_request_title: 'test: create a sample PR'
+          pull_request_body: |-
+            Sample creating a multi-line PR body.
+
+            This PR adds two files:
+              `${{ github.workspace }}/example/exec/test-exec.sh`
+              `${{ github.workspace }}/example/dir/test-file.txt`
+
+          changed_files_tree: |-
+            [
+              {
+                path: `${{ github.workspace }}/example/exec/test.sh`,
+                mode: "100755",
+                type: "blob"
+              },
+              {
+                path: `${{ github.workspace }}/example/dir/test.txt`,
+                mode: "100644",
+                type: "blob"
+              },
+            ]
