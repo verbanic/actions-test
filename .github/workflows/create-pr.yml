@@ -54,19 +54,19 @@ jobs:
             Sample creating a multi-line PR body.
 
             This PR adds two files:
-              `${{ github.workspace }}/example/exec/test-exec.sh`
-              `${{ github.workspace }}/example/dir/test-file.txt`
+              example/exec/test-exec.sh
+              example/dir/test-file.txt
 
           changed_files_tree: |-
             [
               {
-                path: `${{ github.workspace }}/example/exec/test.sh`,
-                mode: "100755",
-                type: "blob"
+                "path": "example/exec/test.sh",
+                "mode": "100755",
+                "type": "blob"
               },
               {
-                path: `${{ github.workspace }}/example/dir/test.txt`,
-                mode: "100644",
-                type: "blob"
-              },
+                "path": "example/dir/test.txt",
+                "mode": "100644",
+                "type": "blob"
+              }
             ]

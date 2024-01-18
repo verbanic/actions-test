@@ -122,7 +122,7 @@ runs:
         PR_BODY: '${{ inputs.pull_request_body }}'
         CHANGED_FILES_TREE: '${{ inputs.changed_files_tree }}'
       with:
-        github-token: '${{ steps.mint-token.outputs.token }}'
+        github-token: '${{ inputs.token }}'
         retries: '3'
         script: |-
           try {
@@ -138,19 +138,20 @@ runs:
               base_tree: ${githubSHA}
             `);
 
-            let changedFilesTree = [];
-            try {
-              changedFilesTree = JSON.parse(`${process.env.CHANGED_FILES_TREE}`);
-            } catch (err) {
-              console.error(err);
-              core.setFailed(`Failed to parse input changed_files_tree: ${err}`);
-            }
+            console.log(`RAW: ${process.env.CHANGED_FILES_TREE}`)
+            const changedFilesTree = JSON.parse(process.env.CHANGED_FILES_TREE);
+            console.log(`BEFORE: ${changedFilesTree}`);
 
             // iterate the files loading their content into each object
-            for await (const file of files) {
-              const content = await fs.readFile(file.path, { encoding: "utf8" });
-              file.content = content;
-            }
+            await Promise.allSettled(
+              changedFilesTree.map(async (file) => {
+                console.log(`FILE: ${file}`);
+                const content = await fs.readFile(file.path, { encoding: "utf8" });
+                file.content = content;
+              })
+            );
+
+            console.log(`AFTER: ${changedFilesTree}`);
 
             // create new git tree from the pr branch
             const { data: tree } = await github.rest.git.createTree({
@@ -208,7 +209,7 @@ runs:
         PR_TITLE: '${{ inputs.pull_request_title }}'
         PR_BODY: '${{ inputs.pull_request_body }}'
       with:
-        github-token: '${{ steps.mint-token.outputs.token }}'
+        github-token: '${{ inputs.token }}'
         retries: '3'
         script: |-
           try {
