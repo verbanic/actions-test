@@ -58,13 +58,9 @@ jobs:
           changed_files_tree: |-
             [
               {
-                "path": "example/exec/test.sh",
-                "mode": "100755",
-                "type": "blob"
+                "path": "example/exec/test.sh"
               },
               {
-                "path": "example/dir/test.txt",
-                "mode": "100644",
-                "type": "blob"
+                "path": "example/dir/test.txt"
               }
             ]
