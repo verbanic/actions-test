@@ -130,7 +130,7 @@ runs:
 
             const githubSHA = "${{ github.sha }}";
             const parentSHA = "${{ steps.create-branch-ref.outputs.result }}";
-            const pullRequestPartialRef = `heads/${process.env.BASE_BRANCH}`;
+            const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
 
             core.info(`Creating new tree:
               owner:     ${context.repo.owner}
