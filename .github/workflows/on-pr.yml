@@ -14,7 +14,7 @@
 
 name: 'on-pr'
 on:
-  pull_request:t
+  pull_request:
 
 jobs:
   test:
