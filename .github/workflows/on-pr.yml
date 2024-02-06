@@ -27,8 +27,10 @@ jobs:
 
       - name: 'Print envvars'
         shell: 'bash'
-        with:
-          test: '123'
+        env: 
+          GH_CONTEXT: '${{ toJSON(github) }}'
+          VAR_CONTEXT: '${{ toJSON(vars) }}'
+          RUNNER_CONTEXT: '${{ toJSON(runner) }}'
         run: |-
           printenv
 
