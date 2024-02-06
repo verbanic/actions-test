@@ -35,9 +35,9 @@ jobs:
           cat << EOF > guardian_policy-input.json
           {
               "github": {
-                  "context": "${GH_CONTEXT}",
-                  "vars": "${VARS_CONTEXT}",
-                  "runner": "${RUNNER_CONTEXT}",
+                  "context": ${GH_CONTEXT},
+                  "vars": ${VARS_CONTEXT},
+                  "runner": ${RUNNER_CONTEXT},
               }
           }
           EOF
