@@ -25,6 +25,11 @@ jobs:
       - name: 'Checkout'
         uses: 'actions/checkout@v4'
 
+      - name: 'Print envvars'
+        shell: 'bash'
+        run: |-
+          printenv
+
       - name: 'Show event payload'
         shell: 'bash'
         run: |-
