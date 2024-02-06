@@ -29,10 +29,20 @@ jobs:
         shell: 'bash'
         env: 
           GH_CONTEXT: '${{ toJSON(github) }}'
-          VAR_CONTEXT: '${{ toJSON(vars) }}'
+          VARS_CONTEXT: '${{ toJSON(vars) }}'
           RUNNER_CONTEXT: '${{ toJSON(runner) }}'
         run: |-
-          printenv
+          cat << EOF > guardian_policy-input.json
+          {
+              "github": {
+                  "context": "${GH_CONTEXT}",
+                  "vars": "${VARS_CONTEXT}",
+                  "runner": "${RUNNER_CONTEXT}",
+              }
+          }
+          EOF
+
+          cat guardian_policy-input.json
 
       - name: 'Show event payload'
         shell: 'bash'
