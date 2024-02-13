@@ -1,16 +1,15 @@
 name: 'dispatch_test'
-run-name: 'dispatch_test - [${{ github.event.action }}][${{ github.event.client_payload.uuid }}]'
+run-name: 'dispatch_test[${{ github.event.client_payload.uuid }}]'
 
 on:
   repository_dispatch:
     types:
-      - 'test_plan'
-      - 'test_output'
+      - 'test'
 
 jobs:
   plan:
     if: |
-      github.event.action == 'test_plan'
+      github.event.client_paylod.command == 'plan'
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout'
@@ -19,11 +18,12 @@ jobs:
       - name: 'Test Plan'
         shell: 'bash'
         run: |-
+          echo "Sleep 30"
           echo "Test Plan!"
 
   outputs:
     if: |
-      github.event.action == 'test_outputs'
+      github.event.client_paylod.command == 'output'
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout'
@@ -32,4 +32,5 @@ jobs:
       - name: 'Test Outputs'
         shell: 'bash'
         run: |-
+          echo "Sleep 30"
           echo "Test Outputs!"
