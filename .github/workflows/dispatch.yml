@@ -9,7 +9,7 @@ on:
 jobs:
   plan:
     if: |
-      github.event.client_paylod.command == 'plan'
+      github.event.client_payload.command == 'plan'
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout'
@@ -23,7 +23,7 @@ jobs:
 
   outputs:
     if: |
-      github.event.client_paylod.command == 'output'
+      github.event.client_payload.command == 'output'
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout'
