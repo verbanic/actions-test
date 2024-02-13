@@ -14,9 +14,13 @@ jobs:
         uses: 'actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744' # ratchet:actions/checkout@v3
 
       - name: 'Test Plan'
+        env:
+          UUID: '${{ github.event.client_payload.uuid }}'
         shell: 'bash'
         run: |-
+          echo "[START-${UUID}]"
           echo "Test Plan!"
+          echo "[END-${UUID}]"
 
   outputs:
     needs:
@@ -28,5 +32,9 @@ jobs:
 
       - name: 'Test Outputs'
         shell: 'bash'
+        env:
+          UUID: '${{ github.event.client_payload.uuid }}'
         run: |-
+          echo "[START-${UUID}]"
           echo "Test Outputs!"
+          echo "[END-${UUID}]"
