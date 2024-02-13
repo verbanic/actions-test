@@ -19,6 +19,7 @@ jobs:
         shell: 'bash'
         run: |-
           echo "Sleep 30"
+          sleep 30
           echo "Test Plan!"
 
   outputs:
@@ -33,4 +34,5 @@ jobs:
         shell: 'bash'
         run: |-
           echo "Sleep 30"
+          sleep 30
           echo "Test Outputs!"
