@@ -8,8 +8,6 @@ on:
 
 jobs:
   plan:
-    if: |
-      github.event.client_payload.command == 'plan'
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout'
@@ -18,13 +16,11 @@ jobs:
       - name: 'Test Plan'
         shell: 'bash'
         run: |-
-          echo "Sleep 30"
-          sleep 30
           echo "Test Plan!"
 
   outputs:
-    if: |
-      github.event.client_payload.command == 'output'
+    needs:
+      - 'plan'
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout'
@@ -33,6 +29,4 @@ jobs:
       - name: 'Test Outputs'
         shell: 'bash'
         run: |-
-          echo "Sleep 30"
-          sleep 30
           echo "Test Outputs!"
