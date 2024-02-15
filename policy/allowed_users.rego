@@ -2,7 +2,7 @@ package guardian
 
 import rego.v1
 
-import input.event.sender as sender
+import input.sender as sender
 
 deny contains msg if {
 	allowed_users := {"octocat"}
