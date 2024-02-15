@@ -19,7 +19,7 @@ jobs:
         shell: 'bash'
         run: |-
           echo "[START-${UUID}]"
-          RAND=$($RANDOM % 2)
+          RAND=$(($RANDOM % 2))
           if [[ $RAND == "1" ]]; then
             echo "denied"
           else
