@@ -39,6 +39,7 @@ jobs:
           COMMAND: '${{ github.event.client_payload.command }}'
         shell: 'bash'
         run: |-
+          set +x
           echo "[START-${UUID}]"
           terraform init -input=false -no-color
           $COMMAND
