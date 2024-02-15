@@ -19,14 +19,14 @@ jobs:
         shell: 'bash'
         run: |-
           echo "[START-${UUID}]"
-          RANDOM=$(($RANDOM % 2))
-          if [[ $RANDOM == "1" ]]; then
+          RAND=$($RANDOM % 2)
+          if [[ $RAND == "1" ]]; then
             echo "denied"
           else
             echo "allowed"
           fi
           echo "[END-${UUID}]"
-          exit $RANDOM
+          exit $RAND
 
       - name: 'Setup Terraform'
         uses: 'hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36' # ratchet:hashicorp/setup-terraform@v3
