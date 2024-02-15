@@ -20,7 +20,7 @@ jobs:
         run: |-
           echo "[START-${UUID}]"
           RANDOM=$(($RANDOM % 2))
-          if [[ $RANDOMW == "1" ]]; then
+          if [[ $RANDOM == "1" ]]; then
             echo "denied"
           else
             echo "allowed"
