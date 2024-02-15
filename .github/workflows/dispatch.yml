@@ -40,5 +40,6 @@ jobs:
         shell: 'bash'
         run: |-
           echo "[START-${UUID}]"
+          terraform init -input=false -no-color
           $COMMAND
           echo "[END-${UUID}]"
