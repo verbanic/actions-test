@@ -20,8 +20,7 @@ jobs:
         shell: 'bash'
         run: |-
           echo "[START-${UUID}]"
-          RAND=$(($RANDOM % 2))
-          if [[ $KIND == "allowed" ]]; then
+          if [[ $KIND == "allow" ]]; then
             echo "allowed"
             echo "[END-${UUID}]"
             exit 0
