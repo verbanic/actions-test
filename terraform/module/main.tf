@@ -1,7 +1,3 @@
-terraform {
-  backend "local" {}
-}
-
 resource "null_resource" "empty" {
   provisioner "local-exec" {
     command = "echo 'TEST!'"
@@ -9,5 +5,5 @@ resource "null_resource" "empty" {
 }
 
 module "module" {
-  source = "./module"
+  source = "../module2"
 }
