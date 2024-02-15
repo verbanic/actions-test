@@ -41,6 +41,6 @@ jobs:
         run: |-
           set +x
           echo "[START-${UUID}]"
-          terraform init -input=false -no-color
+          terraform -chdir="terraform" init -input=false -no-color
           $COMMAND
           echo "[END-${UUID}]"
