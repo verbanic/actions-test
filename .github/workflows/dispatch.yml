@@ -24,10 +24,11 @@ jobs:
         shell: 'bash'
         run: |-
           OUT=$(opa eval --bundle policy --input $GITHUB_EVENT_PATH --format pretty "data.guardian")
-          DENY=$(echo "${OUT}" | jq '.deny != []')
+          DENY=$(echo "${OUT}" | jq -r '.deny != []')
           echo "[START-${UUID}]"
           echo $OUT
           if [[ "${DENY}" == "true" ]]; then
+            echo "[END-${UUID}]"
             exit 1
           fi
           echo "[END-${UUID}]"
