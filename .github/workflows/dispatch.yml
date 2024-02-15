@@ -15,18 +15,21 @@ jobs:
 
       - name: 'Validate'
         env:
+          KIND: '${{ github.event.client_payload.kind }}'
           UUID: '${{ github.event.client_payload.uuid }}'
         shell: 'bash'
         run: |-
           echo "[START-${UUID}]"
           RAND=$(($RANDOM % 2))
-          if [[ $RAND == "1" ]]; then
-            echo "denied"
-          else
+          if [[ $KIND == "allowed" ]]; then
             echo "allowed"
+            echo "[END-${UUID}]"
+            exit 0
+          else
+            echo "denied"
+            echo "[END-${UUID}]"
+            exit 1
           fi
-          echo "[END-${UUID}]"
-          exit $RAND
 
       - name: 'Setup Terraform'
         uses: 'hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36' # ratchet:hashicorp/setup-terraform@v3
