@@ -23,7 +23,6 @@ jobs:
           UUID: '${{ github.event.client_payload.uuid }}'
         shell: 'bash'
         run: |-
-          cat $GITHUB_EVENT_PATH
           set -x
           OUT=$(opa eval --bundle policy --input $GITHUB_EVENT_PATH --format pretty "data.guardian")
           DENY=$(echo "${OUT} | jq '.deny == []'")          
