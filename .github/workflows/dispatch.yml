@@ -20,11 +20,14 @@ jobs:
 
       - name: 'Validate'
         env:
-          KIND: '${{ github.event.client_payload.kind }}'
           UUID: '${{ github.event.client_payload.uuid }}'
         shell: 'bash'
         run: |-
+          cat $GITHUB_EVENT_PATH
+          set -x
+          echo "[START-${UUID}]"
           opa eval --fail-defined --bundle policy --input $GITHUB_EVENT_PATH --format pretty "data.guardian"
+          echo "[END-${UUID}]"
 
       - name: 'Setup Terraform'
         uses: 'hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36' # ratchet:hashicorp/setup-terraform@v3
