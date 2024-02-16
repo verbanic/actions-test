@@ -87,14 +87,14 @@ jobs:
           COMMANDS: '${{ toJson(github.event.client_payload.commands) }}'
         with:
           script: |-
-            const {UUID,COMMANDS} = process.env
-            const commands = JSON.parse(COMMANDS)
+            const { UUID, COMMANDS } = process.env;
+            const commands = JSON.parse(COMMANDS);
 
-            console.log(`[START-${UUID}`])
+            console.log(`[START-${UUID}]`);
             for (const command in commands) {
-              console.log(`#########################################################`)
-              console.log(command`)
-              console.log(`#########################################################`)
+              console.log(`#########################################################`);
+              console.log(command);
+              console.log(`#########################################################`);
               await exec.exec(command);
             }
-            console.log(`[END-${UUID}`])
+            console.log(`[END-${UUID}]`);
