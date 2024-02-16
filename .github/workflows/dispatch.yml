@@ -91,10 +91,18 @@ jobs:
             const commands = JSON.parse(COMMANDS);
 
             console.log(`[START-${UUID}]`);
-            for (const command in commands) {
-              console.log(`#########################################################`);
-              console.log(command);
-              console.log(`#########################################################`);
-              await exec.exec(command);
+            try{
+              for (const command of commands) {
+                if (command === "") {
+                  continue;
+                }
+                console.log(`#########################################################`);
+                console.log(command);
+                console.log(`#########################################################`);
+                await exec.exec(command);
+              }
+            }catch(e){
+              console.error(e)
+            }finally{
+              console.log(`[END-${UUID}]`);
             }
-            console.log(`[END-${UUID}]`);
