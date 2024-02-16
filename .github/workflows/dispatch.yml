@@ -83,11 +83,17 @@ jobs:
       - name: 'Command'
         env:
           UUID: '${{ github.event.client_payload.uuid }}'
-          COMMAND: '${{ github.event.client_payload.command }}'
+          COMMANDS: '${{ github.event.client_payload.commands }}'
         shell: 'bash'
         run: |-
-          set -x
-          echo "[START-${UUID}]"
-          terraform -chdir="terraform" init -input=false -no-color
-          $COMMAND
-          echo "[END-${UUID}]"
+          const {UUID,COMMANDS} = process.env
+          const commands = JSON.parse(COMMANDS)
+
+          console.log(`[START-${UUID}`])
+          for (const command in commands) {
+            console.log(`#########################################################`)
+            console.log(command`)
+            console.log(`#########################################################`)
+            await exec.exec(command);
+          }
+          console.log(`[END-${UUID}`])
