@@ -81,19 +81,20 @@ jobs:
         uses: 'hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36' # ratchet:hashicorp/setup-terraform@v3
 
       - name: 'Command'
+        uses: 'actions/github-script@v7'
         env:
           UUID: '${{ github.event.client_payload.uuid }}'
           COMMANDS: '${{ toJson(github.event.client_payload.commands) }}'
-        shell: 'bash'
-        run: |-
-          const {UUID,COMMANDS} = process.env
-          const commands = JSON.parse(COMMANDS)
+        with:
+          script: |-
+            const {UUID,COMMANDS} = process.env
+            const commands = JSON.parse(COMMANDS)
 
-          console.log(`[START-${UUID}`])
-          for (const command in commands) {
-            console.log(`#########################################################`)
-            console.log(command`)
-            console.log(`#########################################################`)
-            await exec.exec(command);
-          }
-          console.log(`[END-${UUID}`])
+            console.log(`[START-${UUID}`])
+            for (const command in commands) {
+              console.log(`#########################################################`)
+              console.log(command`)
+              console.log(`#########################################################`)
+              await exec.exec(command);
+            }
+            console.log(`[END-${UUID}`])
