@@ -21,7 +21,6 @@ jobs:
       - name: 'Validate'
         env:
           UUID: '${{ github.event.client_payload.uuid }}'
-        shell: 'bash'
         run: |-
           echo "[START-${UUID}]"
           opa eval --bundle policy --input $GITHUB_EVENT_PATH --format values --fail-defined "data.guardian.deny[message]"
