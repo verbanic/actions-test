@@ -96,9 +96,6 @@ jobs:
                 if (command === "") {
                   continue;
                 }
-                console.log(`#########################################################`);
-                console.log(command);
-                console.log(`#########################################################`);
                 await exec.exec(command);
               }
             }catch(e){
