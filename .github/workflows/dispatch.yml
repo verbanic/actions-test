@@ -23,14 +23,8 @@ jobs:
           UUID: '${{ github.event.client_payload.uuid }}'
         shell: 'bash'
         run: |-
-          OUT=$(opa eval --bundle policy --input $GITHUB_EVENT_PATH --format pretty "data.guardian")
-          DENY=$(echo "${OUT}" | jq -r '.deny != []')
           echo "[START-${UUID}]"
-          echo $OUT
-          if [[ "${DENY}" == "true" ]]; then
-            echo "[END-${UUID}]"
-            exit 1
-          fi
+          opa eval --bundle policy --input $GITHUB_EVENT_PATH --format values --fail-defined "data.guardian.deny[message]"
           echo "[END-${UUID}]"
 
       - name: 'Setup Terraform'
