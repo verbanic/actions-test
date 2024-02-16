@@ -27,7 +27,7 @@ jobs:
             const fs = require("fs/promises");
             const tmpDir = process.env["RUNNER_TEMP"];
 
-            const res = github.graphql(
+            const res = await github.graphql(
               `
               query paginate($cursor: String, $owner: String!, $user: String!) {
                 organization(login: $owner) {
