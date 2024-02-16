@@ -45,7 +45,6 @@ jobs:
               }
               `,
               {
-                cursor: "initialValue",
                 owner: context.repo.owner,
                 user: context.actor,
               }
