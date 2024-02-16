@@ -51,7 +51,7 @@ jobs:
             );
             console.log(res);
 
-            const teams = res.data.organization.teams.nodes.map((n) => n.name);
+            const teams = res.organization.teams.nodes.map((n) => n.name);
             console.log(teams);
 
             const data = {
