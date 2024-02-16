@@ -99,7 +99,7 @@ jobs:
                 await exec.exec(command);
               }
             }catch(e){
-              console.error(e)
+              core.setFailed(e)
             }finally{
               console.log(`[END-${UUID}]`);
             }
