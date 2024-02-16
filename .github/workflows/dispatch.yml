@@ -31,7 +31,7 @@ jobs:
               `
               query paginate($cursor: String, $owner: String!, $user: String!) {
                 organization(login: $owner) {
-                  teams(first: 100, userLogins: [$user]) {
+                  teams(first: 100, after: $cursor, userLogins: [$user]) {
                     totalCount
                     nodes {
                       name
