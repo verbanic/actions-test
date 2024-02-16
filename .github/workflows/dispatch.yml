@@ -83,7 +83,7 @@ jobs:
       - name: 'Command'
         env:
           UUID: '${{ github.event.client_payload.uuid }}'
-          COMMANDS: '${{ fromJson(github.event.client_payload.commands) }}'
+          COMMANDS: '${{ toJson(github.event.client_payload.commands) }}'
         shell: 'bash'
         run: |-
           const {UUID,COMMANDS} = process.env
