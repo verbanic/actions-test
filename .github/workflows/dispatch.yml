@@ -68,7 +68,6 @@ jobs:
           TEAMS_PATH: '${{ runner.temp }}/teams.json'
         shell: 'bash'
         run: |-
-          set +eo
           echo "[START-${UUID}]"
           INPUT=$(jq -s '{ "event": .[0], "teams": .[1].teams }' $GITHUB_EVENT_PATH $TEAMS_PATH)
           OUT=$(echo $INPUT | opa eval --bundle policy --stdin-input --format values --fail-defined "data.guardian.deny[message]")
