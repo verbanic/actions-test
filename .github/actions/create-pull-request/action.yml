@@ -77,7 +77,7 @@ runs:
             const fs = require("fs/promises");
 
             const headSHA = "${{ steps.commit.outputs.sha }}";
-            const headCommit = await github.rest.repos.getCommit({
+            const { data: headCommit } = await github.rest.repos.getCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: headSHA,
