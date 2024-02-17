@@ -49,10 +49,14 @@ runs:
       shell: 'bash'
       run: |-
         git config --global url."https://x-access-token:${{ inputs.token }}@github.com".insteadOf "https://github.com"
+        git config --global user.email "verbanic-app[bot]@users.noreply.github.com"
+        git config --global user.name "Verbanic App Bot"
+
         git checkout -b $HEAD_BRANCH
         git add .
         git commit -m "chore: testing this process"
         git push origin $HEAD_BRANCH
+
         SHA=$(git rev-parse HEAD)
         echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
