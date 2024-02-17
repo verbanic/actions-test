@@ -27,6 +27,11 @@ inputs:
     description: 'The pull request base branch name. Defaults to `main`.'
     required: false
     default: 'main'
+  draft:
+    description: 'Create the release as a draft.'
+    required: true
+    type: 'boolean'
+    default: false
   pull_request_title:
     description: 'The pull request title.'
     required: true
@@ -111,6 +116,7 @@ runs:
       id: 'create-update-pull-request'
       uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
       env:
+        DRAFT: '${{ inputs.draft }}'
         HEAD_BRANCH: '${{ inputs.head_branch }}'
         BASE_BRANCH: '${{ inputs.base_branch }}'
         PR_TITLE: '${{ inputs.pull_request_title }}'
@@ -120,6 +126,7 @@ runs:
         retries: '${{ inputs.max_retries }}'
         script: |-
           try {
+            const draft = JSON.parse(process.env.DRAFT);
             const headRef = process.env.HEAD_BRANCH;
             const baseRef = process.env.BASE_BRANCH;;
 
@@ -146,6 +153,7 @@ runs:
                 repo: context.repo.repo,
                 head: headRef,
                 base: baseRef,
+                defat: draft,
                 title: process.env.PR_TITLE,
                 body: process.env.PR_BODY,
               });
