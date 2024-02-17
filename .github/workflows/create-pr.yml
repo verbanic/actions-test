@@ -45,10 +45,7 @@ jobs:
           git checkout -b automation/test-pr
           git add .
           git commit -m "chore: testing this process"
-          git push origin $HEAD_BRANCH --force
-
-          SHA=$(git rev-parse HEAD)
-          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          git push --set-upstream origin automation/test-pr --force
 
       - name: 'Create/Update Pull Request'
         uses: './.github/actions/create-pull-request'
