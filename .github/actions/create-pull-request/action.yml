@@ -90,7 +90,7 @@ runs:
               repo: context.repo.repo,
               message: process.env.PR_TITLE,
               parents: [headSHA],
-              tree: headCommit.tree.sha,
+              tree: headCommit.commit.tree.sha,
             });
 
             console.log(commit)
