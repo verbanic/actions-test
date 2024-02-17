@@ -45,7 +45,7 @@ jobs:
           git checkout -b automation/test-pr
           git add .
           git commit -m "chore: testing this process"
-          git push --set-upstream automation/test-pr --force
+          git push --set-upstream origin automation/test-pr --force
 
       - name: 'Create/Update Pull Request'
         uses: './.github/actions/create-pull-request'
