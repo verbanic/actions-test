@@ -34,14 +34,6 @@ inputs:
     description: 'The pull request body. Defaults to ``.'
     required: false
     default: ''
-  changed_paths:
-    description: 'JSON array of the relative file paths added or changed in the pull request. Defaults to `[]`.'
-    required: false
-    default: '[]'
-  deleted_paths:
-    description: 'JSON array of the relative file paths deleted in the pull request. Defaults to `[]`.'
-    required: false
-    default: '[]'
   max_retries:
     description: 'The maxiumum number of retries when handling failures. Defaults to `3`.'
     required: false
@@ -50,127 +42,19 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # Get base ref
-    - name: 'Get Base Ref SHA'
-      id: 'base-branch-ref'
-      uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
+    - name: 'Make updates'
+      id: 'commit'
       env:
         HEAD_BRANCH: '${{ inputs.head_branch }}'
-        BASE_BRANCH: '${{ inputs.base_branch }}'
-        PR_TITLE: '${{ inputs.pull_request_title }}'
-        PR_BODY: '${{ inputs.pull_request_body }}'
-      with:
-        github-token: '${{ inputs.token }}'
-        result-encoding: 'string'
-        retries: '${{ inputs.max_retries }}'
-        script: |-
-          const pullRequestPartialRef = `heads/${process.env.BASE_BRANCH}`;
-
-          try {
-            core.info(`Get base branch reference:
-              owner: ${context.repo.owner}
-              repo:  ${context.repo.repo}
-              ref:   ${pullRequestPartialRef}
-            `);
-
-            const { data: existingRef } = await github.rest.git.getRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: pullRequestPartialRef,
-            });
-
-            return existingRef.object.sha;
-          } catch (err) {
-            core.error(err);
-            core.setFailed(`Failed to get base branch reference: ${err}`);
-            process.exit(1);
-          }
-
-    # Create a pull request branch using the GitHub API
-    - name: 'Create/Update Pull Request Branch'
-      id: 'head-branch-ref'
-      uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
-      env:
-        HEAD_BRANCH: '${{ inputs.head_branch }}'
-        BASE_BRANCH: '${{ inputs.base_branch }}'
-        PR_TITLE: '${{ inputs.pull_request_title }}'
-        PR_BODY: '${{ inputs.pull_request_body }}'
-      with:
-        github-token: '${{ inputs.token }}'
-        result-encoding: 'string'
-        retries: '${{ inputs.max_retries }}'
-        script: |-
-          const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
-          const pullRequestFullRef = `refs/${pullRequestPartialRef}`;
-
-          try {
-            core.info(`Get refer request reference:
-              owner: ${context.repo.owner}
-              repo:  ${context.repo.repo}
-              ref:   ${pullRequestPartialRef}
-            `);
-
-            const { data: existingRef } = await github.rest.git.getRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: pullRequestPartialRef,
-            });
-
-            return existingRef.object.sha;
-          } catch (err) {
-            if (err.status !== 404) {
-              core.setFailed(`Failed to get existing pull request reference: ${err}`);
-              core.error(err);
-              process.exit(1);
-            }
-            core.info("Existing pull request reference not found");
-          }
-
-          try {
-            core.info(`Checking for existing pull request reference:
-              owner: ${context.repo.owner}
-              repo:  ${context.repo.repo}
-              ref:   ${pullRequestPartialRef}
-            `);
-
-            const { data: existingRef } = await github.rest.git.getRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: pullRequestPartialRef,
-            });
-
-            return existingRef.object.sha;
-          } catch (err) {
-            if (err.status !== 404) {
-              core.setFailed(`Failed to get existing pull request reference: ${err}`);
-              core.error(err);
-              process.exit(1);
-            }
-            core.info("Existing pull request reference not found");
-          }
-
-          try {
-            core.info(`Creating new pull request reference:
-              owner: ${context.repo.owner}
-              repo:  ${context.repo.repo}
-              ref:   ${pullRequestFullRef}
-              sha:   ${context.sha}
-            `);
-
-            const { data: newRef } = await github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: pullRequestFullRef,
-              sha: context.sha,
-            });
-
-            return newRef.object.sha;
-          } catch (err) {
-            core.setFailed(
-              `Failed to create/update pull request branch reference: ${err}`
-            );
-            core.error(err);
-          }
+      shell: 'bash'
+      run: |-
+        git config --global url."https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com".insteadOf "https://github.com"
+        git checkout -b $HEAD_BRANCH
+        git add .
+        git commit -m "chore: testing this process"
+        git push origin $HEAD_BRANCH
+        SHA=$(git rev-parse HEAD)
+        echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
     # Commit files using the GitHub API to ensure commits are signed
     - name: 'Create Commits'
@@ -181,8 +65,6 @@ runs:
         BASE_BRANCH: '${{ inputs.base_branch }}'
         PR_TITLE: '${{ inputs.pull_request_title }}'
         PR_BODY: '${{ inputs.pull_request_body }}'
-        CHANGED_PATHS: '${{ inputs.changed_paths }}'
-        DELETED_PATHS: '${{ inputs.deleted_paths }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '${{ inputs.max_retries }}'
@@ -190,78 +72,20 @@ runs:
           try {
             const fs = require("fs/promises");
 
-            const parentSHA = "${{ steps.base-branch-ref.outputs.result }}";
-            const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
-
-            // documented here: https://docs.github.com/en/rest/git/trees?apiVersion=2022-11-28#create-a-tree
-            const FILE_MODE = "100644";
-            const EXEC_MODE = "100755";
-
-            const prCommitTree = [];
-
-            const changedPaths = JSON.parse(process.env.CHANGED_PATHS);
-            const deletedPaths = JSON.parse(process.env.DELETED_PATHS);
-
-            // iterate the files loading their content into each object
-            await Promise.allSettled(
-              changedPaths.map(async (file) => {
-                const content = await fs.readFile(file, { encoding: "utf8" });
-                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
-                prCommitTree.push({
-                  path: file,
-                  mode: isExec ? EXEC_MODE : FILE_MODE,
-                  type: "blob",
-                  content: content,
-                });
-              })
-            );
-
-            // iterate the files loading their content into each object
-            await Promise.allSettled(
-              deletedPaths.map(async (file) => {
-                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
-                prCommitTree.push({
-                  path: file,
-                  mode: isExec ? EXEC_MODE : FILE_MODE,
-                  type: "blob",
-                  sha: null,
-                });
-              })
-            );
-
-            core.info(`Creating new tree:
-              owner:     ${context.repo.owner}
-              repo:      ${context.repo.repo}
-              base_tree: ${context.sha}
-            `);
-
-            // create new git tree from the pr branch
-            const { data: tree } = await github.rest.git.createTree({
+            const headSHA = "${{ steps.commit.outputs.sha }}";
+            const headCommit = await github.rest.repos.getCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              base_tree: context.sha,
-              tree: prCommitTree,
-            });
+              ref: headSHA,
+            })
 
-            core.debug("tree: ", tree);
-
-            core.info(`Creating new commit:
-              owner:   ${context.repo.owner}
-              repo:    ${context.repo.repo}
-              parents: ${parentSHA}
-              tree:    ${tree.sha}
-            `);
-
-            // create a commit from on the git tree
             const { data: commit } = await github.rest.git.createCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
               message: process.env.PR_TITLE,
-              parents: [parentSHA],
-              tree: tree.sha,
+              parents: [headSHA],
+              tree: headCommit.tree.sha,
             });
-
-            core.debug("commit: ", commit);
 
             core.info(`Updating PR branch ref
               owner: ${context.repo.owner}
@@ -274,7 +98,7 @@ runs:
             await github.rest.git.updateRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: pullRequestPartialRef,
+              ref: "${{ inputs.head_branch }}",
               sha: commit.sha,
               force: true
             });

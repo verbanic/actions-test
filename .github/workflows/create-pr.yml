@@ -44,7 +44,7 @@ jobs:
       - name: 'Create/Update Pull Request'
         uses: './.github/actions/create-pull-request'
         with:
-          token: '${{ secrets.TEST_TOKEN }}'
+          token: '${{ github.token }}'
           base_branch: 'main'
           head_branch: 'automation/test-pr'
           pull_request_title: 'test: testing the create PR flow'
@@ -57,13 +57,3 @@ jobs:
               example/exec/test-exec.sh
               example/dir/test-file.txt
               ```
-
-            Deleted:
-
-              ```code
-              test-file.txt
-              ```
-          changed_paths: |-
-            ["example/dir/test.txt","example/exec/test.sh"]
-          deleted_paths: |-
-            ["test-file.txt"]
