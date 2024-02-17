@@ -53,7 +53,7 @@ runs:
         git config --global user.name "Verbanic App Bot"
 
         git checkout -b $HEAD_BRANCH
-        git pull
+        git pull origin $HEAD_BRANCH
         git add .
         git commit -m "chore: testing this process"
         git push origin $HEAD_BRANCH
