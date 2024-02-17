@@ -153,7 +153,7 @@ runs:
                 repo: context.repo.repo,
                 head: headRef,
                 base: baseRef,
-                defat: draft,
+                draft: draft,
                 title: process.env.PR_TITLE,
                 body: process.env.PR_BODY,
               });
