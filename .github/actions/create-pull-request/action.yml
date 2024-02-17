@@ -53,10 +53,9 @@ runs:
         git config --global user.name "Verbanic App Bot"
 
         git checkout -b $HEAD_BRANCH
-        git pull origin $HEAD_BRANCH
         git add .
         git commit -m "chore: testing this process"
-        git push origin $HEAD_BRANCH
+        git push origin $HEAD_BRANCH --force
 
         SHA=$(git rev-parse HEAD)
         echo "sha=${SHA}" >> $GITHUB_OUTPUT
