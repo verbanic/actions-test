@@ -42,23 +42,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: 'Make updates'
-      id: 'commit'
-      env:
-        HEAD_BRANCH: '${{ inputs.head_branch }}'
-      shell: 'bash'
-      run: |-
-        git config --global url."https://x-access-token:${{ inputs.token }}@github.com".insteadOf "https://github.com"
-        git config --global user.email "verbanic-app[bot]@users.noreply.github.com"
-        git config --global user.name "Verbanic App Bot"
-
-        git checkout -b $HEAD_BRANCH
-        git add .
-        git commit -m "chore: testing this process"
-        git push origin $HEAD_BRANCH --force
-
-        SHA=$(git rev-parse HEAD)
-        echo "sha=${SHA}" >> $GITHUB_OUTPUT
+    - name: 'Checkout'
+      id: 'checkout'
+      uses: 'actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8' # ratchet:actions/checkout@v3
+      with:
+        ref: '${{ inputs.head_branch }}'
 
     # Commit files using the GitHub API to ensure commits are signed
     - name: 'Create Commits'
@@ -80,7 +68,7 @@ runs:
             const { data: headCommit } = await github.rest.repos.getCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: headSHA,
+              ref: context.sha,
             })
 
             console.log(headCommit)
@@ -98,7 +86,7 @@ runs:
             core.info(`Updating PR branch ref
               owner: ${context.repo.owner}
               repo:  ${context.repo.repo}
-              ref:   ${pullRequestPartialRef}
+              ref:   heads/${{ inputs.head_branch }}
               sha:   ${commit.sha}
             `);
 

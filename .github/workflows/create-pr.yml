@@ -20,9 +20,6 @@ jobs:
   create_pr:
     permissions:
       contents: 'write'
-      packages: 'write'
-      pull-requests: 'write'
-      id-token: 'write'
 
     runs-on: 'ubuntu-latest'
     steps:
@@ -31,6 +28,7 @@ jobs:
         uses: 'actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8' # ratchet:actions/checkout@v3
 
       - name: 'Add Files'
+        id: 'changes'
         shell: 'bash'
         run: |-
           mkdir -p "${{ github.workspace }}/example/exec"
@@ -40,6 +38,17 @@ jobs:
           echo "This is a text file" > "${{ github.workspace }}/example/dir/test.txt"
 
           chmod 755 "${{ github.workspace }}/example/exec/test.sh"
+
+          git config --global user.email "verbanicm@users.noreply.github.com"
+          git config --global user.name "Mike Verbanic"
+
+          git checkout -b automation/test-pr
+          git add .
+          git commit -m "chore: testing this process"
+          git push origin $HEAD_BRANCH --force
+
+          SHA=$(git rev-parse HEAD)
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
       - name: 'Create/Update Pull Request'
         uses: './.github/actions/create-pull-request'
