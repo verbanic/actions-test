@@ -51,15 +51,5 @@ jobs:
         uses: './.github/actions/create-pull-request'
         with:
           token: '${{ secrets.REPO_TOKEN }}'
-          base_branch: 'main'
           head_branch: 'automation/test-pr'
           pull_request_title: 'test: testing the create PR flow'
-          pull_request_body: |-
-            Sample creating a multi-line PR body.
-
-            Added:
-
-              ```code
-              example/exec/test-exec.sh
-              example/dir/test-file.txt
-              ```

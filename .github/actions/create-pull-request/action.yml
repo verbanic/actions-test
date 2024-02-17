@@ -42,11 +42,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: 'Checkout'
-      id: 'checkout'
-      uses: 'actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8' # ratchet:actions/checkout@v3
-      with:
-        ref: '${{ inputs.head_branch }}'
+    - name: 'Make updates'
+      id: 'commit'
+      env:
+        HEAD_BRANCH: '${{ inputs.head_branch }}'
+      shell: 'bash'
+      run: |-
+        SHA=$(git rev-parse HEAD)
+        echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
     # Commit files using the GitHub API to ensure commits are signed
     - name: 'Create Commits'
@@ -68,7 +71,7 @@ runs:
             const { data: headCommit } = await github.rest.repos.getCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: context.sha,
+              ref: headSHA,
             })
 
             console.log(headCommit)
@@ -86,7 +89,7 @@ runs:
             core.info(`Updating PR branch ref
               owner: ${context.repo.owner}
               repo:  ${context.repo.repo}
-              ref:   heads/${{ inputs.head_branch }}
+              ref:   heads/${process.env.HEAD_BRANCH}
               sha:   ${commit.sha}
             `);
 
