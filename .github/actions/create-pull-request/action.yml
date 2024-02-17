@@ -48,7 +48,7 @@ runs:
         HEAD_BRANCH: '${{ inputs.head_branch }}'
       shell: 'bash'
       run: |-
-        git config --global url."https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com".insteadOf "https://github.com"
+        git config --global url."https://x-access-token:${{ inputs.token }}@github.com".insteadOf "https://github.com"
         git checkout -b $HEAD_BRANCH
         git add .
         git commit -m "chore: testing this process"

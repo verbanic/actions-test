@@ -44,7 +44,7 @@ jobs:
       - name: 'Create/Update Pull Request'
         uses: './.github/actions/create-pull-request'
         with:
-          token: '${{ github.token }}'
+          token: '${{ secrets.REPO_TOKEN }}'
           base_branch: 'main'
           head_branch: 'automation/test-pr'
           pull_request_title: 'test: testing the create PR flow'
