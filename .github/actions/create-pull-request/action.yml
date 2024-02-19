@@ -411,5 +411,5 @@ runs:
         if [[ "${DISABLE_AUTO_MERGE}" == "true" ]]; then
           gh pr merge $PR_NUMBER --disable-auto
         else
-          gh pr merge $PR_NUMBER --auto
+          gh pr merge $PR_NUMBER --auto --squash
         fi
