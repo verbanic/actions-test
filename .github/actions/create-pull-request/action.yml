@@ -362,6 +362,7 @@ runs:
                 repo: context.repo.repo,
                 pull_number: listResponse.data[0].number,
                 title: process.env.PR_TITLE,
+                state: "open", # this should always be "open" so convert to draft succeeds if draft == true
                 body: process.env.PR_BODY,
               });
 
