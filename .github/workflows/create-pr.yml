@@ -20,6 +20,10 @@ on:
         description: 'Create this pull request as a draft'
         type: 'boolean'
         default: false
+      disable_automerge:
+        description: 'Disable auto-merge'
+        type: 'boolean'
+        default: false
 
 jobs:
   create_pr:
