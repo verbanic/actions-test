@@ -390,13 +390,14 @@ runs:
 
     - name: 'Set Pull Request Status'
       env:
-        DRAFT: '${{ inputs.token }}'
+        DRAFT: '${{ inputs.draft }}'
         PR_NUMBER: '${{ steps.create-update-pull-request.outputs.pull_request_number }}'
         GH_TOKEN: '${{ inputs.token }}'
         PULL_REQUEST_NODE_ID: '${{ steps.create-update-pull-request.outputs.node_id }}'
       shell: 'bash'
       run: |-
-        if [[ "${DRAFT}" == true ]]; then
+        # Set Pull Request Status
+        if [[ "${DRAFT}" == "true" ]]; then
           gh pr ready $PR_NUMBER --undo
         else
           gh pr ready $PR_NUMBER
