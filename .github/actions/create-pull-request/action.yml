@@ -396,14 +396,11 @@ runs:
         PULL_REQUEST_NODE_ID: '${{ steps.create-update-pull-request.outputs.node_id }}'
       shell: 'bash'
       run: |-
-        github-token: '${{ inputs.token }}'
-        retries: '${{ inputs.max_retries }}'
-        script: |-
-          if [[ "${DRAFT}" == true ]]; then
-            gh pr ready $PR_NUMBER --undo
-          else
-            gh pr ready $PR_NUMBER
-          fi
+        if [[ "${DRAFT}" == true ]]; then
+          gh pr ready $PR_NUMBER --undo
+        else
+          gh pr ready $PR_NUMBER
+        fi
 
     # Enable auto-merge if requested
     # Skip if draft == true, draft PRs cannot enable auto-merge
