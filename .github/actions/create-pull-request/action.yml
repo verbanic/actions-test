@@ -342,7 +342,7 @@ runs:
                 body: process.env.PR_BODY,
               };
 
-              core.info(`Creating pull request:`, createRequest);
+              core.info(`Creating pull request: ${createRequest}`);
 
               createResponse = await github.rest.pulls.create(createRequest);
 
@@ -368,7 +368,7 @@ runs:
               updateRequest.state = "open";
             }
 
-            core.info(`Updating pull request:`, updateRequest);
+            core.info(`Updating pull request: ${updateRequest}`);
 
             const updateResponse = await github.rest.pulls.update(updateRequest);
 
