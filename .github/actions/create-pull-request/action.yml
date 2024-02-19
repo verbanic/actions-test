@@ -404,12 +404,11 @@ runs:
         fi
 
     # Enable auto-merge if requested
-    # Skip if draft == true, draft PRs cannot enable auto-merge
     - name: 'Enable auto-merge'
       id: 'enable-automerge'
       uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
-      if: |-
-        !fromJSON(inputs.draft) && !fromJSON(inputs.disable_automerge)
+      # Skip if draft == true, draft PRs cannot enable auto-merge
+      if: '${{ !fromJSON(inputs.draft) && !fromJSON(inputs.disable_automerge) }}'
       env:
         PULL_REQUEST_NODE_ID: '${{ steps.create-update-pull-request.outputs.node_id }}'
       with:
