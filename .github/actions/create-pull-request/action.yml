@@ -351,9 +351,7 @@ runs:
                 `Created PR #${createResponse.data.number} at ${createResponse.data.html_url}`
               );
 
-              core.setOutput("pull_request_number", createResponse.data.number)
-              core.setOutput("draft", createResponse.data.draft)
-              core.setOutput("auto_merge", createResponse.data.auto_merge ? true : false)
+              core.setOutput("number", createResponse.data.number)
             } else {
               core.info(`Updating pull request:
                 owner:       ${context.repo.owner}
@@ -375,9 +373,7 @@ runs:
                 `Updated PR #${updateResponse.data.number} at ${updateResponse.data.html_url}`
               );
 
-              core.setOutput("pull_request_number", updateResponse.data.number)
-              core.setOutput("draft", updateResponse.data.draft)
-              core.setOutput("auto_merge", updateResponse.data.auto_merge ? true : false)
+              core.setOutput("number", updateResponse.data.number)
             }
 
             core.setOutput('node_id', pullRequestNodeID)
