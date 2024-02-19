@@ -382,53 +382,6 @@ runs:
             core.setFailed(`Failed to create/update pull request: ${err}`);
           }
 
-    - name: 'Set Pull Request Status'
-      uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
-      env:
-        PR_NUMBER: '${{ steps.create-update-pull-request.outputs.pull_request_number }}'
-        CURRENT_DRAFT_STATE: '${{ steps.create-update-pull-request.outputs.draft }}'
-        REQUESTED_DRAFT_STATE: '${{ inputs.draft }}'
-        PULL_REQUEST_NODE_ID: '${{ steps.create-update-pull-request.outputs.node_id }}'
-      with:
-        github-token: '${{ inputs.token }}'
-        retries: '${{ inputs.max_retries }}'
-        script: |-
-          try {
-            const prNumber = process.env.PR_NUMBER;
-            const currentDraftState = JSON.parse(process.env.CURRENT_DRAFT_STATE);
-            const requestedDraftState = JSON.parse(process.env.REQUESTED_DRAFT_STATE);
-
-            if (currentDraftState == requestedDraftState){
-              const draftStateDisplay = currentDraftState ? 'DRAFT' : 'READY FOR REVIEW'
-              core.info(`PR #${prNumber} is already in ${ draftStateDisplay } status`);
-              process.exit(0);
-            }
-
-            const mutationName = requestedDraftState ? 
-              'convertPullRequestToDraft' :
-              'markPullRequestReadyForReview'
-
-            const query = `mutation setPullRequestStatus($pullId: ID!) {
-              ${mutationName}(input: {
-                pullRequestId: $pullId,
-              }) {
-                pullRequest {
-                  id,
-                  number,
-                  isDraft
-                }
-              }
-            }`
-
-            await github.graphql(query, {
-              pullId: process.env.PULL_REQUEST_NODE_ID,
-              mergeMethod: 'SQUASH',
-            })
-          } catch (err) {
-            core.error(err);
-            core.setFailed(`Failed to enable auto-merge for pull request: ${err}`);
-          }
-
     - name: 'Toggle draft'
       id: 'toggle-draft'
       # Skip if draft == true, draft PRs cannot modify auto-merge
