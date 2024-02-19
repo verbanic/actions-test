@@ -336,11 +336,14 @@ runs:
                 base:  ${baseRef}
               `);
 
+              # We should always create as "open" so convert to draft succeeds if required
+              # Convert to draft fails is the PR is already in draft status
               const createResponse = await github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 head: headRef,
                 base: baseRef,
+                draft: false,
                 title: process.env.PR_TITLE,
                 body: process.env.PR_BODY,
               });
@@ -357,12 +360,14 @@ runs:
                 pull_number: ${listResponse.data[0].number}
               `);
 
+              # We should always update to "open" so convert to draft succeeds if required
+              # Convert to draft fails is the PR is already in draft status
               const updateResponse = await github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: listResponse.data[0].number,
+                state: "open",
                 title: process.env.PR_TITLE,
-                state: "open", # this should always be "open" so convert to draft succeeds if draft == true
                 body: process.env.PR_BODY,
               });
 
@@ -380,7 +385,7 @@ runs:
           }
 
     # Set pull request to draft if requested
-    - name: 'Enable auto-merge'
+    - name: 'Convert to Draft'
       id: 'convert-to-draft'
       uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
       if: '${{ fromJSON(inputs.draft) }}'
