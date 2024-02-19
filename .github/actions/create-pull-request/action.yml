@@ -392,8 +392,10 @@ runs:
       run: |-
         # Toggle draft
         if [[ "${DRAFT}" == "true" ]]; then
+          echo "Setting PR #${PR_NUMBER} to draft"
           gh pr ready $PR_NUMBER --undo
         else
+          echo "Setting PR #${PR_NUMBER} to ready for review"
           gh pr ready $PR_NUMBER
         fi
 
@@ -409,7 +411,9 @@ runs:
       run: |-
         # Toggle auto-merge
         if [[ "${DISABLE_AUTO_MERGE}" == "true" ]]; then
+          echo "Disabling auto merge for PR #${PR_NUMBER}"
           gh pr merge $PR_NUMBER --disable-auto
         else
+          echo "Enabling auto merge for PR #${PR_NUMBER}"
           gh pr merge $PR_NUMBER --auto --squash
         fi
