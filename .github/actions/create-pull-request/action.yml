@@ -336,8 +336,8 @@ runs:
                 base:  ${baseRef}
               `);
 
-              # We should always create as "open" so convert to draft succeeds if required
-              # Convert to draft fails is the PR is already in draft status
+              // We should always create as "open" so convert to draft succeeds if required
+              // Convert to draft fails is the PR is already in draft status
               const createResponse = await github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -360,8 +360,8 @@ runs:
                 pull_number: ${listResponse.data[0].number}
               `);
 
-              # We should always update to "open" so convert to draft succeeds if required
-              # Convert to draft fails is the PR is already in draft status
+              // We should always update to "open" so convert to draft succeeds if required
+              // Convert to draft fails is the PR is already in draft status
               const updateResponse = await github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
