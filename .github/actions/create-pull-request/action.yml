@@ -113,29 +113,6 @@ runs:
           const pullRequestFullRef = `refs/${pullRequestPartialRef}`;
 
           try {
-            core.info(`Get refer request reference:
-              owner: ${context.repo.owner}
-              repo:  ${context.repo.repo}
-              ref:   ${pullRequestPartialRef}
-            `);
-
-            const { data: existingRef } = await github.rest.git.getRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: pullRequestPartialRef,
-            });
-
-            return existingRef.object.sha;
-          } catch (err) {
-            if (err.status !== 404) {
-              core.setFailed(`Failed to get existing pull request reference: ${err}`);
-              core.error(err);
-              process.exit(1);
-            }
-            core.info("Existing pull request reference not found");
-          }
-
-          try {
             core.info(`Checking for existing pull request reference:
               owner: ${context.repo.owner}
               repo:  ${context.repo.repo}
