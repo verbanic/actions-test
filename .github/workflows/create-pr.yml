@@ -33,8 +33,9 @@ jobs:
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout'
-        id: 'checkout'
         uses: 'actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8' # ratchet:actions/checkout@v3
+        with:
+          token: '${{ secrets.REPO_TOKEN }}'
 
       - name: 'Add Files'
         id: 'changes'
@@ -47,6 +48,13 @@ jobs:
           echo "This is a text file" > "${{ github.workspace }}/example/dir/test.txt"
 
           chmod 755 "${{ github.workspace }}/example/exec/test.sh"
+
+          git remote -v
+
+          git checkout -b automation/test-pr
+          git add .
+          git commit -m "test: automation testing"
+          git push origin automation/test-pr
 
       - name: 'Create/Update Pull Request'
         uses: './.github/actions/create-pull-request'

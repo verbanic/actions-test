@@ -47,14 +47,6 @@ inputs:
     description: 'Create pull request in draft status.'
     required: false
     default: 'false'
-  changed_paths:
-    description: 'JSON array of the relative file paths added or changed in the pull request. Defaults to `[]`.'
-    required: false
-    default: '[]'
-  deleted_paths:
-    description: 'JSON array of the relative file paths deleted in the pull request. Defaults to `[]`.'
-    required: false
-    default: '[]'
   disable_automerge:
     description: 'Disable auto-merge on the target pull request.'
     required: false
@@ -119,29 +111,6 @@ runs:
         script: |-
           const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
           const pullRequestFullRef = `refs/${pullRequestPartialRef}`;
-
-          try {
-            core.info(`Get refer request reference:
-              owner: ${context.repo.owner}
-              repo:  ${context.repo.repo}
-              ref:   ${pullRequestPartialRef}
-            `);
-
-            const { data: existingRef } = await github.rest.git.getRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: pullRequestPartialRef,
-            });
-
-            return existingRef.object.sha;
-          } catch (err) {
-            if (err.status !== 404) {
-              core.setFailed(`Failed to get existing pull request reference: ${err}`);
-              core.error(err);
-              process.exit(1);
-            }
-            core.info("Existing pull request reference not found");
-          }
 
           try {
             core.info(`Checking for existing pull request reference:
@@ -382,6 +351,8 @@ runs:
             core.setFailed(`Failed to create/update pull request: ${err}`);
           }
 
+    # The gh cli masks logic to validate existing statuses and call the appropriate APIs
+    # This is significantly less code and more readability for one extra API call
     - name: 'Toggle draft'
       id: 'toggle-draft'
       env:
@@ -399,9 +370,11 @@ runs:
           gh pr ready $PR_NUMBER
         fi
 
-    # Skip if draft == true, draft PRs cannot modify auto-merge
+    # The gh cli masks logic to validate existing statuses and call the appropriate APIs
+    # This is significantly less code and more readability for one extra API call
     - name: 'Toggle auto-merge'
       id: 'toggle-automerge'
+      # Skip if draft == true, draft PRs cannot modify auto-merge
       if: '${{ !fromJSON(inputs.draft) }}'
       env:
         GH_TOKEN: '${{ inputs.token }}'
