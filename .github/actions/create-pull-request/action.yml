@@ -353,6 +353,8 @@ runs:
               core.info(
                 `Created PR #${createResponse.data.number} at ${createResponse.data.html_url}`
               );
+
+              core.setOutput("pull_request_number", createResponse.data.number)
             } else {
               core.info(`Updating pull request:
                 owner:       ${context.repo.owner}
@@ -376,6 +378,8 @@ runs:
               core.info(
                 `Updated PR #${updateResponse.data.number} at ${updateResponse.data.html_url}`
               );
+
+              core.setOutput("pull_request_number", updateResponse.data.number)
             }
 
             core.setOutput('node_id', pullRequestNodeID)
@@ -384,35 +388,23 @@ runs:
             core.setFailed(`Failed to create/update pull request: ${err}`);
           }
 
-    # Set pull request to draft if requested
-    - name: 'Convert to Draft'
+    - name: 'Set Pull Request Status'
       id: 'convert-to-draft'
       uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
-      if: '${{ fromJSON(inputs.draft) }}'
       env:
+        DRAFT: '${{ inputs.token }}'
+        PR_NUMBER: '${{ steps.create-update-pull-request.outputs.pull_request_number }}'
+        GH_TOKEN: '${{ inputs.token }}'
         PULL_REQUEST_NODE_ID: '${{ steps.create-update-pull-request.outputs.node_id }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '${{ inputs.max_retries }}'
         script: |-
-          try {
-            const query = `mutation convertToDraft($pullId: ID!) {
-              convertPullRequestToDraft(input: {
-                pullRequestId: $pullId,
-              }) {
-                pullRequest {
-                  id
-                }
-              }
-            }`
-
-            await github.graphql(query, {
-              pullId: process.env.PULL_REQUEST_NODE_ID,
-            })
-          } catch (err) {
-            core.error(err);
-            core.setFailed(`Failed to convert pull request to draft: ${err}`);
-          }
+          if [[ "${DRAFT}" == true ]]; then
+            gh pr ready $PR_NUMBER --undo
+          else
+            gh pr ready $PR_NUMBER
+          fi
 
     # Enable auto-merge if requested
     # Skip if draft == true, draft PRs cannot enable auto-merge
