@@ -330,6 +330,7 @@ runs:
             core.debug(`listResponse: ${listResponse}`);
 
             let pullRequestNodeID;
+            let createResponse;
             if (!listResponse.data.length) {
               const createRequest = {
                 owner: context.repo.owner,
@@ -343,19 +344,22 @@ runs:
 
               core.info(`Creating pull request:`, createRequest);
 
-              const createResponse = await github.rest.pulls.create(createRequest);
+              createResponse = await github.rest.pulls.create(createRequest);
 
               pullRequestNodeID = createResponse.data.node_id
+              existing
 
               core.info(
                 `Created PR #${createResponse.data.number} at ${createResponse.data.html_url}`
               );
             }
 
+            const existingPullRequest = createResponse ? createResponse.data : listResponse.data[0]
+
             const updateRequest = {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: listResponse.data[0].number,
+              pull_number: existingPullRequest.number,
               title: process.env.PR_TITLE,
               body: process.env.PR_BODY,
             };
