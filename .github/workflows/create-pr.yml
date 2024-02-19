@@ -48,7 +48,7 @@ jobs:
         uses: './.github/actions/create-pull-request'
         with:
           token: '${{ secrets.REPO_TOKEN }}'
-          draft: true
+          draft: '${{ inputs.draft }}'
           base_branch: '${{ github.event.repository.default_branch }}'
           head_branch: 'automation/test-pr'
           title: 'test: testing the create PR flow'
