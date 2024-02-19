@@ -384,7 +384,6 @@ runs:
 
     - name: 'Toggle draft'
       id: 'toggle-draft'
-      # Skip if draft == true, draft PRs cannot modify auto-merge
       env:
         GH_TOKEN: '${{ inputs.token }}'
         DRAFT: '${{ fromJSON(inputs.draft) }}'
@@ -395,7 +394,7 @@ runs:
         if [[ "${DRAFT}" == "true" ]]; then
           gh pr ready $PR_NUMBER --undo
         else
-          gh pr readymerge $PR_NUMBER
+          gh pr ready $PR_NUMBER
         fi
 
     # Skip if draft == true, draft PRs cannot modify auto-merge
