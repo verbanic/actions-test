@@ -12,6 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This action is required to generate a pull request with signed commits using a bot or PAT
+# This is required to allow automation to pass organizational rulesets which include signed commits.
+# The commits will show signed by github.com.
+#
+# Alternatives to this solution were deemed infeasible:
+#  - Add exceptions for bots to the signed commits rulesets or use a certificate per bot identity, this is
+#    not ideal because then we have to maange secrets
+#  - Add exceptions for bots to the Google CLA, this would show status checks as failed which is not desirable
+
 name: 'Create Pull Request'
 description: |-
   Use this action to create a pull request from a GitHub workflow.
@@ -27,18 +36,29 @@ inputs:
     description: 'The pull request base branch name. Defaults to `main`.'
     required: false
     default: 'main'
-  draft:
-    description: 'Create the release as a draft.'
-    required: true
-    type: 'boolean'
-    default: false
-  pull_request_title:
+  title:
     description: 'The pull request title.'
     required: true
-  pull_request_body:
+  body:
     description: 'The pull request body. Defaults to ``.'
     required: false
     default: ''
+  draft:
+    description: 'Create pull request in draft status.'
+    required: false
+    default: 'false'
+  changed_paths:
+    description: 'JSON array of the relative file paths added or changed in the pull request. Defaults to `[]`.'
+    required: false
+    default: '[]'
+  deleted_paths:
+    description: 'JSON array of the relative file paths deleted in the pull request. Defaults to `[]`.'
+    required: false
+    default: '[]'
+  disable_automerge:
+    description: 'Disable auto-merge on the target pull request.'
+    required: false
+    default: 'false'
   max_retries:
     description: 'The maxiumum number of retries when handling failures. Defaults to `3`.'
     required: false
@@ -47,24 +67,139 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: 'Make updates'
-      id: 'commit'
+    # Get base ref
+    - name: 'Get Base Ref SHA'
+      id: 'base-branch-ref'
+      uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
       env:
         HEAD_BRANCH: '${{ inputs.head_branch }}'
-      shell: 'bash'
-      run: |-
-        SHA=$(git rev-parse HEAD)
-        echo "sha=${SHA}" >> $GITHUB_OUTPUT
+        BASE_BRANCH: '${{ inputs.base_branch }}'
+        PR_TITLE: '${{ inputs.title }}'
+        PR_BODY: '${{ inputs.body }}'
+      with:
+        github-token: '${{ inputs.token }}'
+        result-encoding: 'string'
+        retries: '${{ inputs.max_retries }}'
+        script: |-
+          const pullRequestPartialRef = `heads/${process.env.BASE_BRANCH}`;
+
+          try {
+            core.info(`Get base branch reference:
+              owner: ${context.repo.owner}
+              repo:  ${context.repo.repo}
+              ref:   ${pullRequestPartialRef}
+            `);
+
+            const { data: existingRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequestPartialRef,
+            });
+
+            return existingRef.object.sha;
+          } catch (err) {
+            core.error(err);
+            core.setFailed(`Failed to get base branch reference: ${err}`);
+            process.exit(1);
+          }
+
+    # Create a pull request branch using the GitHub API
+    - name: 'Create/Update Pull Request Branch'
+      id: 'head-branch-ref'
+      uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
+      env:
+        HEAD_BRANCH: '${{ inputs.head_branch }}'
+        BASE_BRANCH: '${{ inputs.base_branch }}'
+        PR_TITLE: '${{ inputs.title }}'
+        PR_BODY: '${{ inputs.body }}'
+      with:
+        github-token: '${{ inputs.token }}'
+        result-encoding: 'string'
+        retries: '${{ inputs.max_retries }}'
+        script: |-
+          const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
+          const pullRequestFullRef = `refs/${pullRequestPartialRef}`;
+
+          try {
+            core.info(`Get refer request reference:
+              owner: ${context.repo.owner}
+              repo:  ${context.repo.repo}
+              ref:   ${pullRequestPartialRef}
+            `);
+
+            const { data: existingRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequestPartialRef,
+            });
+
+            return existingRef.object.sha;
+          } catch (err) {
+            if (err.status !== 404) {
+              core.setFailed(`Failed to get existing pull request reference: ${err}`);
+              core.error(err);
+              process.exit(1);
+            }
+            core.info("Existing pull request reference not found");
+          }
+
+          try {
+            core.info(`Checking for existing pull request reference:
+              owner: ${context.repo.owner}
+              repo:  ${context.repo.repo}
+              ref:   ${pullRequestPartialRef}
+            `);
+
+            const { data: existingRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequestPartialRef,
+            });
+
+            return existingRef.object.sha;
+          } catch (err) {
+            if (err.status !== 404) {
+              core.setFailed(`Failed to get existing pull request reference: ${err}`);
+              core.error(err);
+              process.exit(1);
+            }
+            core.info("Existing pull request reference not found");
+          }
+
+          try {
+            core.info(`Creating new pull request reference:
+              owner: ${context.repo.owner}
+              repo:  ${context.repo.repo}
+              ref:   ${pullRequestFullRef}
+              sha:   ${context.sha}
+            `);
+
+            const { data: newRef } = await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequestFullRef,
+              sha: context.sha,
+            });
+
+            return newRef.object.sha;
+          } catch (err) {
+            core.setFailed(
+              `Failed to create/update pull request branch reference: ${err}`
+            );
+            core.error(err);
+          }
 
     # Commit files using the GitHub API to ensure commits are signed
     - name: 'Create Commits'
       id: 'create-commits'
-      uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
+      uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
       env:
         HEAD_BRANCH: '${{ inputs.head_branch }}'
         BASE_BRANCH: '${{ inputs.base_branch }}'
-        PR_TITLE: '${{ inputs.pull_request_title }}'
-        PR_BODY: '${{ inputs.pull_request_body }}'
+        PR_TITLE: '${{ inputs.title }}'
+        PR_BODY: '${{ inputs.body }}'
+        CHANGED_PATHS: '${{ inputs.changed_paths }}'
+        DELETED_PATHS: '${{ inputs.deleted_paths }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '${{ inputs.max_retries }}'
@@ -72,29 +207,83 @@ runs:
           try {
             const fs = require("fs/promises");
 
-            const headSHA = "${{ steps.commit.outputs.sha }}";
-            const { data: headCommit } = await github.rest.repos.getCommit({
+            const parentSHA = "${{ steps.base-branch-ref.outputs.result }}";
+            const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
+
+            // documented here: https://docs.github.com/en/rest/git/trees?apiVersion=2022-11-28#create-a-tree
+            const FILE_MODE = "100644";
+            const EXEC_MODE = "100755";
+
+            const prCommitTree = [];
+
+            const changedPaths = JSON.parse(process.env.CHANGED_PATHS);
+            const deletedPaths = JSON.parse(process.env.DELETED_PATHS);
+
+            // iterate the files loading their content into each object
+            await Promise.all(
+              changedPaths.map(async (file) => {
+                const content = await fs.readFile(file, { encoding: "utf8" });
+                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
+                prCommitTree.push({
+                  path: file,
+                  mode: isExec ? EXEC_MODE : FILE_MODE,
+                  type: "blob",
+                  content: content,
+                });
+              })
+            );
+
+            // iterate the files loading their content into each object
+            await Promise.all(
+              deletedPaths.map(async (file) => {
+                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
+                prCommitTree.push({
+                  path: file,
+                  mode: isExec ? EXEC_MODE : FILE_MODE,
+                  type: "blob",
+                  sha: null,
+                });
+              })
+            );
+
+            core.info(`Creating new tree:
+              owner:     ${context.repo.owner}
+              repo:      ${context.repo.repo}
+              base_tree: ${context.sha}
+            `);
+
+            // create new git tree from the pr branch
+            const { data: tree } = await github.rest.git.createTree({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: headSHA,
-            })
+              base_tree: context.sha,
+              tree: prCommitTree,
+            });
 
-            console.log(headCommit)
+            core.debug("tree: ", tree);
 
+            core.info(`Creating new commit:
+              owner:   ${context.repo.owner}
+              repo:    ${context.repo.repo}
+              parents: ${parentSHA}
+              tree:    ${tree.sha}
+            `);
+
+            // create a commit from on the git tree
             const { data: commit } = await github.rest.git.createCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
               message: process.env.PR_TITLE,
-              parents: [headSHA],
-              tree: headCommit.commit.tree.sha,
+              parents: [parentSHA],
+              tree: tree.sha,
             });
 
-            console.log(commit)
+            core.debug("commit: ", commit);
 
             core.info(`Updating PR branch ref
               owner: ${context.repo.owner}
               repo:  ${context.repo.repo}
-              ref:   heads/${process.env.HEAD_BRANCH}
+              ref:   ${pullRequestPartialRef}
               sha:   ${commit.sha}
             `);
 
@@ -102,7 +291,7 @@ runs:
             await github.rest.git.updateRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: "heads/${{ inputs.head_branch }}",
+              ref: pullRequestPartialRef,
               sha: commit.sha,
               force: true
             });
@@ -114,13 +303,13 @@ runs:
     # Create a pull request for review
     - name: 'Create/Update Pull Request'
       id: 'create-update-pull-request'
-      uses: 'actions/github-script@98814c53be79b1d30f795b907e553d8679345975' # ratchet:actions/github-script@v6
+      uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
       env:
         DRAFT: '${{ inputs.draft }}'
         HEAD_BRANCH: '${{ inputs.head_branch }}'
         BASE_BRANCH: '${{ inputs.base_branch }}'
-        PR_TITLE: '${{ inputs.pull_request_title }}'
-        PR_BODY: '${{ inputs.pull_request_body }}'
+        PR_TITLE: '${{ inputs.title }}'
+        PR_BODY: '${{ inputs.body }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '${{ inputs.max_retries }}'
@@ -128,59 +317,100 @@ runs:
           try {
             const draft = JSON.parse(process.env.DRAFT);
             const headRef = process.env.HEAD_BRANCH;
-            const baseRef = process.env.BASE_BRANCH;;
+            const baseRef = process.env.BASE_BRANCH;
 
             const listResponse = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              head: process.env.HEAD_BRANCH,
+              head: `${context.repo.owner}:${process.env.HEAD_BRANCH}`,
               base: process.env.BASE_BRANCH,
             });
 
             core.debug(`listResponse: ${listResponse}`);
 
+            let pullRequestNodeID;
             if (!listResponse.data.length) {
-              core.info(`Creating pull request:
-                owner: ${context.repo.owner}
-                repo:  ${context.repo.repo}
-                head:  ${headRef}
-                base:  ${baseRef}
-              `);
-
-              const createResponse = await github.rest.pulls.create({
+              const createRequest = {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 head: headRef,
                 base: baseRef,
-                draft: draft,
+                draft: true,
                 title: process.env.PR_TITLE,
                 body: process.env.PR_BODY,
-              });
+              };
+
+              core.info(`Creating pull request:`, createRequest);
+
+              const createResponse = await github.rest.pulls.create(createRequest);
+
+              pullRequestNodeID = createResponse.data.node_id
 
               core.info(
                 `Created PR #${createResponse.data.number} at ${createResponse.data.html_url}`
               );
-            } else {
-              core.info(`Updating pull request: 
-                owner:       ${context.repo.owner}
-                repo:        ${context.repo.repo}
-                pull_number: ${listResponse.data[0].number}
-              `);
-
-              const updateResponse = await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: listResponse.data[0].number,
-                title: process.env.PR_TITLE,
-                body: process.env.PR_BODY,
-              });
-
-              core.info(
-                `Updated PR #${updateResponse.data.number} at ${updateResponse.data.html_url}`
-              );
             }
+
+            const updateRequest = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: listResponse.data[0].number,
+              title: process.env.PR_TITLE,
+              body: process.env.PR_BODY,
+            };
+
+            if (!draft) {
+              updateRequest.state = "open";
+            }
+
+            core.info(`Updating pull request:`, updateRequest);
+
+            const updateResponse = await github.rest.pulls.update(updateRequest);
+
+            pullRequestNodeID = updateResponse.data.node_id
+
+            core.info(
+              `Updated PR #${updateResponse.data.number} at ${updateResponse.data.html_url}`
+            );
+
+            core.setOutput('node_id', pullRequestNodeID)
           } catch (err) {
             core.error(err);
             core.setFailed(`Failed to create/update pull request: ${err}`);
+          }
+
+    # Enable auto-merge if requested
+    - name: 'Enable auto-merge'
+      id: 'enable-automerge'
+      uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # ratchet:actions/github-script@v7
+      if: '${{ !fromJSON(inputs.disable_automerge) }}'
+      env:
+        PULL_REQUEST_NODE_ID: '${{ steps.create-update-pull-request.outputs.node_id }}'
+      with:
+        github-token: '${{ inputs.token }}'
+        retries: '${{ inputs.max_retries }}'
+        script: |-
+          try {
+            const query = `mutation enableAutoMerge($pullId: ID!, $mergeMethod: PullRequestMergeMethod) {
+              enablePullRequestAutoMerge(input: {
+                pullRequestId: $pullId,
+                mergeMethod: $mergeMethod,
+              }) {
+                pullRequest {
+                  id,
+                  autoMergeRequest {
+                    enabledAt
+                  }
+                }
+              }
+            }`
+
+            await github.graphql(query, {
+              pullId: process.env.PULL_REQUEST_NODE_ID,
+              mergeMethod: 'SQUASH',
+            })
+          } catch (err) {
+            core.error(err);
+            core.setFailed(`Failed to enable auto-merge for pull request: ${err}`);
           }
