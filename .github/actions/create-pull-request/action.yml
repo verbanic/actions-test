@@ -167,8 +167,6 @@ runs:
         BASE_BRANCH: '${{ inputs.base_branch }}'
         PR_TITLE: '${{ inputs.title }}'
         PR_BODY: '${{ inputs.body }}'
-        CHANGED_PATHS: '${{ inputs.changed_paths }}'
-        DELETED_PATHS: '${{ inputs.deleted_paths }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '${{ inputs.max_retries }}'
@@ -178,42 +176,7 @@ runs:
 
             const parentSHA = "${{ steps.base-branch-ref.outputs.result }}";
             const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
-
-            // documented here: https://docs.github.com/en/rest/git/trees?apiVersion=2022-11-28#create-a-tree
-            const FILE_MODE = "100644";
-            const EXEC_MODE = "100755";
-
             const prCommitTree = [];
-
-            const changedPaths = JSON.parse(process.env.CHANGED_PATHS);
-            const deletedPaths = JSON.parse(process.env.DELETED_PATHS);
-
-            // iterate the files loading their content into each object
-            await Promise.all(
-              changedPaths.map(async (file) => {
-                const content = await fs.readFile(file, { encoding: "utf8" });
-                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
-                prCommitTree.push({
-                  path: file,
-                  mode: isExec ? EXEC_MODE : FILE_MODE,
-                  type: "blob",
-                  content: content,
-                });
-              })
-            );
-
-            // iterate the files loading their content into each object
-            await Promise.all(
-              deletedPaths.map(async (file) => {
-                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
-                prCommitTree.push({
-                  path: file,
-                  mode: isExec ? EXEC_MODE : FILE_MODE,
-                  type: "blob",
-                  sha: null,
-                });
-              })
-            );
 
             core.info(`Creating new tree:
               owner:     ${context.repo.owner}
@@ -222,10 +185,9 @@ runs:
             `);
 
             // create new git tree from the pr branch
-            const { data: tree } = await github.rest.git.createTree({
+            const { data: tree } = await github.rest.git.getTree({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              base_tree: context.sha,
               tree: prCommitTree,
             });
 

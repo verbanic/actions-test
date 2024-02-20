@@ -1,0 +1,25 @@
+name: 'ci'
+
+on:
+  workflow_run:
+    workflows:
+      - 'ci'
+    types:
+      - 'completed'
+    branches:
+      - 'main'
+      - 'release/**/*'
+
+jobs:
+  plan:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744' # ratchet:actions/checkout@v3
+
+      - name: 'Show Event'
+        shell: 'bash'
+        run: |-
+          cat $GITHUB_EVENT_PATH
