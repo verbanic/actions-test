@@ -11,7 +11,7 @@ on:
       - 'release/**/*'
 
 jobs:
-  plan:
+  ci:
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
