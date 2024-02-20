@@ -11,7 +11,9 @@ on:
       - 'release/**/*'
 
 jobs:
-  plan:
+  run:
+    if: |-
+      startsWith(github.event.workflow_run.head_commit.message, 'Release: v')
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
