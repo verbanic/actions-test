@@ -1,0 +1,26 @@
+name: 'upload'
+
+on:
+  workflow_call:
+
+jobs:
+  upload:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744' # ratchet:actions/checkout@v3
+
+      - shell: 'bash'
+        run: |-
+          mkdir -p path/to/artifact
+
+      - shell: 'bash'
+        run: |-
+          echo "TEST" > test.txt
+
+      - uses: 'actions/upload-artifact@v4'
+        with:
+          name: 'test'
+          path: 'test.txt'
