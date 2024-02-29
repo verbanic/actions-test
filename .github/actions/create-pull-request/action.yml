@@ -175,29 +175,30 @@ runs:
             const fs = require("fs/promises");
 
             const parentSHA = "${{ steps.base-branch-ref.outputs.result }}";
+            const headSHA = "${{ steps.head-branch-ref.outputs.result }}";
             const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
             const prCommitTree = [];
 
-            core.info(`Creating new tree:
-              owner:     ${context.repo.owner}
-              repo:      ${context.repo.repo}
-              base_tree: ${context.sha}
+            core.info(`Get HEAD commit:
+              owner:      ${context.repo.owner}
+              repo:       ${context.repo.repo}
+              commit_sha: ${headSHA}
             `);
 
-            // create new git tree from the pr branch
-            const { data: tree } = await github.rest.git.getTree({
+            // get head commit
+            const { data: headCommit } = await github.rest.git.getCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tree: prCommitTree,
+              commit_sha: headSHA,
             });
 
-            core.debug("tree: ", tree);
+            core.debug("commit: ", headCommit);
 
             core.info(`Creating new commit:
               owner:   ${context.repo.owner}
               repo:    ${context.repo.repo}
-              parents: ${parentSHA}
-              tree:    ${tree.sha}
+              parents: ${headCommit.sha}
+              tree:    ${headCommit.tree.sha}
             `);
 
             // create a commit from on the git tree
@@ -205,8 +206,8 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               message: process.env.PR_TITLE,
-              parents: [parentSHA],
-              tree: tree.sha,
+              parents: [headCommit.sha],
+              tree: headCommit.tree.sha,
             });
 
             core.debug("commit: ", commit);
