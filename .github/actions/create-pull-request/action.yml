@@ -197,7 +197,7 @@ runs:
             core.info(`Creating new commit:
               owner:   ${context.repo.owner}
               repo:    ${context.repo.repo}
-              parents: ${headCommit.sha}
+              parents: ${headCommit.parents[0].sha}
               tree:    ${headCommit.tree.sha}
             `);
 
@@ -206,7 +206,7 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               message: process.env.PR_TITLE,
-              parents: [headCommit.sha],
+              parents: [headCommit.parents[0].sha],
               tree: headCommit.tree.sha,
             });
 
