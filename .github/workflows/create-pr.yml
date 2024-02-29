@@ -52,6 +52,7 @@ jobs:
 
           chmod 755 "${{ github.workspace }}/example/exec/test.sh"
 
+          git checkout -b test
           git add .
           git commit -m "test: automation testing"
 
