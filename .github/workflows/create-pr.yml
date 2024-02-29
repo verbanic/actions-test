@@ -58,8 +58,8 @@ jobs:
 
           git diff --name-only
 
-          CHANGED=$(git diff --name-only --diff-filter=d | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
-          DELETED=$(git diff --name-only --diff-filter=D | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
+          CHANGED=$(git diff HEAD~1 --name-only --diff-filter=d | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
+          DELETED=$(git diff HEAD~1 --name-only --diff-filter=D | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
 
           echo "changed=${CHANGED}"
           echo "deleted=${DELETED}"
