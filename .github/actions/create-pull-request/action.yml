@@ -279,6 +279,7 @@ runs:
             });
 
             core.debug("commit: ", commit);
+            console.log("commit: ", commit);
 
             core.info(`Updating PR branch ref
               owner: ${context.repo.owner}
