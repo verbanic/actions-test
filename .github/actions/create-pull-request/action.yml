@@ -47,6 +47,14 @@ inputs:
     description: 'Create pull request in draft status.'
     required: false
     default: 'false'
+  changed_paths:
+    description: 'JSON array of the relative file paths added or changed in the pull request. Defaults to `[]`.'
+    required: false
+    default: '[]'
+  deleted_paths:
+    description: 'JSON array of the relative file paths deleted in the pull request. Defaults to `[]`.'
+    required: false
+    default: '[]'
   disable_automerge:
     description: 'Disable auto-merge on the target pull request.'
     required: false
@@ -181,14 +189,6 @@ runs:
             core.error(err);
           }
 
-    - name: 'Get Change'
-      shell: 'bash'
-      run: |-
-        CHANGED=$(git diff --name-only --diff-filter=d | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
-        DELETED=$(git diff --name-only --diff-filter=D | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
-        echo "changed=${CHANGED}" >> $GITHUB_OUTPUT
-        echo "deleted=${DELETED}" >> $GITHUB_OUTPUT
-
     # Commit files using the GitHub API to ensure commits are signed
     - name: 'Create Commits'
       id: 'create-commits'
@@ -198,8 +198,8 @@ runs:
         BASE_BRANCH: '${{ inputs.base_branch }}'
         PR_TITLE: '${{ inputs.title }}'
         PR_BODY: '${{ inputs.body }}'
-        CHANGED_PATHS: '${{ fromJSON(steps.get-paths.outputs.changed) }}'
-        DELETED_PATHS: '${{ fromJSON(steps.get-paths.outputs.deleted) }}'
+        CHANGED_PATHS: '${{ inputs.changed_paths }}'
+        DELETED_PATHS: '${{ inputs.deleted_paths }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '${{ inputs.max_retries }}'
