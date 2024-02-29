@@ -113,6 +113,29 @@ runs:
           const pullRequestFullRef = `refs/${pullRequestPartialRef}`;
 
           try {
+            core.info(`Get refer request reference:
+              owner: ${context.repo.owner}
+              repo:  ${context.repo.repo}
+              ref:   ${pullRequestPartialRef}
+            `);
+
+            const { data: existingRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequestPartialRef,
+            });
+
+            return existingRef.object.sha;
+          } catch (err) {
+            if (err.status !== 404) {
+              core.setFailed(`Failed to get existing pull request reference: ${err}`);
+              core.error(err);
+              process.exit(1);
+            }
+            core.info("Existing pull request reference not found");
+          }
+
+          try {
             core.info(`Checking for existing pull request reference:
               owner: ${context.repo.owner}
               repo:  ${context.repo.repo}
@@ -158,6 +181,14 @@ runs:
             core.error(err);
           }
 
+    - name: 'Get Change'
+      shell: 'bash'
+      run: |-
+        CHANGED=$(git diff --name-only --diff-filter=d | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
+        DELETED=$(git diff --name-only --diff-filter=D | jq --compact-output --raw-output --raw-input --slurp 'split("\n") | map(select(. != ""))')
+        echo "changed=${CHANGED}" >> $GITHUB_OUTPUT
+        echo "deleted=${DELETED}" >> $GITHUB_OUTPUT
+
     # Commit files using the GitHub API to ensure commits are signed
     - name: 'Create Commits'
       id: 'create-commits'
@@ -167,6 +198,8 @@ runs:
         BASE_BRANCH: '${{ inputs.base_branch }}'
         PR_TITLE: '${{ inputs.title }}'
         PR_BODY: '${{ inputs.body }}'
+        CHANGED_PATHS: '${{ fromJSON(steps.get-paths.outputs.changed) }}'
+        DELETED_PATHS: '${{ fromJSON(steps.get-paths.outputs.deleted) }}'
       with:
         github-token: '${{ inputs.token }}'
         retries: '${{ inputs.max_retries }}'
@@ -175,30 +208,65 @@ runs:
             const fs = require("fs/promises");
 
             const parentSHA = "${{ steps.base-branch-ref.outputs.result }}";
-            const headSHA = "${{ steps.head-branch-ref.outputs.result }}";
             const pullRequestPartialRef = `heads/${process.env.HEAD_BRANCH}`;
+
+            // documented here: https://docs.github.com/en/rest/git/trees?apiVersion=2022-11-28#create-a-tree
+            const FILE_MODE = "100644";
+            const EXEC_MODE = "100755";
+
             const prCommitTree = [];
 
-            core.info(`Get HEAD commit:
-              owner:      ${context.repo.owner}
-              repo:       ${context.repo.repo}
-              commit_sha: ${headSHA}
+            const changedPaths = JSON.parse(process.env.CHANGED_PATHS);
+            const deletedPaths = JSON.parse(process.env.DELETED_PATHS);
+
+            // iterate the files loading their content into each object
+            await Promise.all(
+              changedPaths.map(async (file) => {
+                const content = await fs.readFile(file, { encoding: "utf8" });
+                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
+                prCommitTree.push({
+                  path: file,
+                  mode: isExec ? EXEC_MODE : FILE_MODE,
+                  type: "blob",
+                  content: content,
+                });
+              })
+            );
+
+            // iterate the files loading their content into each object
+            await Promise.all(
+              deletedPaths.map(async (file) => {
+                const isExec = !!((await fs.stat(file).mode) & fs.constants.S_IXUSR);
+                prCommitTree.push({
+                  path: file,
+                  mode: isExec ? EXEC_MODE : FILE_MODE,
+                  type: "blob",
+                  sha: null,
+                });
+              })
+            );
+
+            core.info(`Creating new tree:
+              owner:     ${context.repo.owner}
+              repo:      ${context.repo.repo}
+              base_tree: ${context.sha}
             `);
 
-            // get head commit
-            const { data: headCommit } = await github.rest.git.getCommit({
+            // create new git tree from the pr branch
+            const { data: tree } = await github.rest.git.createTree({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              commit_sha: headSHA,
+              base_tree: context.sha,
+              tree: prCommitTree,
             });
 
-            core.debug("commit: ", headCommit);
+            core.debug("tree: ", tree);
 
             core.info(`Creating new commit:
               owner:   ${context.repo.owner}
               repo:    ${context.repo.repo}
               parents: ${parentSHA}
-              tree:    ${headCommit.tree.sha}
+              tree:    ${tree.sha}
             `);
 
             // create a commit from on the git tree
@@ -207,7 +275,7 @@ runs:
               repo: context.repo.repo,
               message: process.env.PR_TITLE,
               parents: [parentSHA],
-              tree: headCommit.tree.sha,
+              tree: tree.sha,
             });
 
             core.debug("commit: ", commit);

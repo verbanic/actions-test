@@ -52,12 +52,8 @@ jobs:
 
           chmod 755 "${{ github.workspace }}/example/exec/test.sh"
 
-          git remote -v
-
-          git checkout -b automation/test-pr
           git add .
           git commit -m "test: automation testing"
-          git push origin automation/test-pr --force
 
       - name: 'Create/Update Pull Request'
         uses: './.github/actions/create-pull-request'
